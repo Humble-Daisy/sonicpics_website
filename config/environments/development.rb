@@ -65,8 +65,8 @@ Rails.application.configure do
   config.active_record.query_log_tags_enabled = true
   config.active_job.verbose_enqueue_logs = true
 
-  # Route Solid Queue's models to the dedicated queue database
-  # (mirrors production so deliver_later jobs land where bin/jobs polls).
+  # Jobs run through Solid Queue on the queue database, as in production; bin/jobs (Procfile.dev) works them.
+  config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }
 
   config.action_dispatch.verbose_redirect_logs = true
