@@ -1,0 +1,63 @@
+<% content_for(:title) { t("pages.support.title") } %>
+
+<section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+  <h1 class="text-4xl font-bold text-text-heading">
+    <%= t("pages.support.title") %>
+  </h1>
+  <p class="mt-4 text-lg text-text-muted">
+    <%= t("pages.support.intro") %>
+    <%= mail_to t("pages.support.email"),
+          t("pages.support.email_label"),
+          subject: t("pages.support.email_subject"),
+          class: "text-interactive underline hover:no-underline focus-ring rounded" %>
+  </p>
+
+  <h2 class="mt-12 text-2xl font-semibold text-text-heading">
+    <%= t("pages.support.faqs_title") %>
+  </h2>
+
+  <div class="mt-8">
+    <h3 class="text-xl font-semibold text-text-heading">
+      <%= t("pages.support.location.question") %>
+    </h3>
+    <p class="mt-3 text-text-body"><%= t("pages.support.location.answer") %></p>
+    <p class="mt-3">
+      <%= link_to t("pages.support.location.link"), t("pages.support.location.url"),
+            target: "_blank", rel: "noopener noreferrer",
+            class: "text-interactive underline hover:no-underline focus-ring rounded" %>
+      <span class="sr-only"><%= t("pages.external.new_tab") %></span>
+    </p>
+  </div>
+
+  <div class="mt-10">
+    <h3 class="text-xl font-semibold text-text-heading">
+      <%= t("pages.support.photos.question") %>
+    </h3>
+    <ol class="mt-3 list-decimal ps-6 space-y-3 text-text-body">
+      <li><%= t("pages.support.photos.location_steps") %></li>
+      <li><%= t("pages.support.photos.photo_steps") %></li>
+    </ol>
+  </div>
+
+  <% %w[saving sharing youtube_timing].each do |faq| %>
+    <div class="mt-10">
+      <h3 class="text-xl font-semibold text-text-heading">
+        <%= t("pages.support.#{faq}.question") %>
+      </h3>
+      <p class="mt-3 text-text-body"><%= t("pages.support.#{faq}.answer") %></p>
+    </div>
+  <% end %>
+
+  <div class="mt-10">
+    <h3 class="text-xl font-semibold text-text-heading">
+      <%= t("pages.support.youtube_account.question") %>
+    </h3>
+    <p class="mt-3 text-text-body"><%= t("pages.support.youtube_account.answer") %></p>
+    <p class="mt-3">
+      <%= link_to t("pages.support.youtube_account.link"), t("pages.support.youtube_account.url"),
+            target: "_blank", rel: "noopener noreferrer",
+            class: "text-interactive underline hover:no-underline focus-ring rounded" %>
+      <span class="sr-only"><%= t("pages.external.new_tab") %></span>
+    </p>
+  </div>
+</section>

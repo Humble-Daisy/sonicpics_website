@@ -4,19 +4,50 @@
   <h1 class="text-4xl font-bold text-text-heading">
     <%= t("pages.privacy.title") %>
   </h1>
-  <p class="mt-4 text-text-muted">
-    <%= t("pages.privacy.intro") %>
+  <p class="mt-4 text-text-muted"><%= t("pages.privacy.intro") %></p>
+  <p class="mt-2 text-sm text-text-muted">
+    <%= t("pages.privacy.updated") %>: <%= l Date.new(2015, 7, 6), format: :long %>
   </p>
 
-  <% %w[collection usage].each do |section| %>
+  <h2 class="mt-10 text-2xl font-semibold text-text-heading">
+    <%= t("pages.privacy.does_not_title") %>
+  </h2>
+  <ul class="mt-4 space-y-2">
+    <% t("pages.privacy.does_not").each do |item| %>
+      <li class="flex items-start gap-2 text-text-body">
+        <span class="mt-2 size-1.5 rounded-full bg-interactive shrink-0" aria-hidden="true"></span>
+        <%= item %>
+      </li>
+    <% end %>
+  </ul>
+  <p class="mt-4 text-text-body"><%= t("pages.privacy.successor") %></p>
+
+  <p class="mt-8 flex flex-wrap gap-x-4 gap-y-2">
+    <%= link_to t("pages.privacy.website_title"), "#website_privacy",
+          class: "inline-flex items-center min-h-input px-2 text-interactive underline
+                  hover:no-underline focus-ring rounded" %>
+    <%= link_to t("pages.privacy.app_title"), "#application_privacy",
+          class: "inline-flex items-center min-h-input px-2 text-interactive underline
+                  hover:no-underline focus-ring rounded" %>
+  </p>
+
+  <h2 id="website_privacy" class="mt-12 text-2xl font-semibold text-text-heading scroll-mt-24">
+    <%= t("pages.privacy.website_title") %>
+  </h2>
+  <p class="mt-2 text-sm text-text-muted"><%= t("pages.privacy.website_updated") %></p>
+  <p class="mt-4 text-text-body"><%= t("pages.privacy.website_intro") %></p>
+  <p class="mt-4 text-text-body"><%= t("pages.privacy.agreement") %></p>
+
+  <% [
+       [t("pages.privacy.collection.title"), t("pages.privacy.collection.items")],
+       [t("pages.privacy.usage.title"), t("pages.privacy.usage.items")]
+     ].each do |title, items| %>
     <div class="mt-10">
-      <h2 class="text-2xl font-semibold text-text-heading">
-        <%= t("pages.privacy.#{section}.title") %>
-      </h2>
+      <h3 class="text-xl font-semibold text-text-heading"><%= title %></h3>
       <ul class="mt-4 space-y-2">
-        <% t("pages.privacy.#{section}.items").each do |item| %>
+        <% items.each do |item| %>
           <li class="flex items-start gap-2 text-text-body">
-            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-interactive flex-shrink-0" aria-hidden="true"></span>
+            <span class="mt-2 size-1.5 rounded-full bg-interactive shrink-0" aria-hidden="true"></span>
             <%= item %>
           </li>
         <% end %>
@@ -25,27 +56,47 @@
   <% end %>
 
   <div class="mt-10">
-    <h2 class="text-2xl font-semibold text-text-heading">
-      <%= t("pages.privacy.sharing.title") %>
-    </h2>
+    <h3 class="text-xl font-semibold text-text-heading"><%= t("pages.privacy.cookies_title") %></h3>
+    <p class="mt-4 text-text-body"><%= t("pages.privacy.cookies") %></p>
+  </div>
+
+  <div class="mt-10">
+    <h3 class="text-xl font-semibold text-text-heading"><%= t("pages.privacy.sharing.title") %></h3>
     <p class="mt-4 text-text-body"><%= t("pages.privacy.sharing.description") %></p>
   </div>
 
   <div class="mt-10">
-    <h2 class="text-2xl font-semibold text-text-heading">
-      <%= t("pages.privacy.security.title") %>
-    </h2>
+    <h3 class="text-xl font-semibold text-text-heading"><%= t("pages.privacy.security.title") %></h3>
     <p class="mt-4 text-text-body"><%= t("pages.privacy.security.description") %></p>
   </div>
 
+  <% %w[transfer links changes].each do |section| %>
+    <div class="mt-10">
+      <h3 class="text-xl font-semibold text-text-heading">
+        <%= t("pages.privacy.#{section}_title") %>
+      </h3>
+      <p class="mt-4 text-text-body"><%= t("pages.privacy.#{section}") %></p>
+    </div>
+  <% end %>
+
+  <h2 id="application_privacy" class="mt-16 text-2xl font-semibold text-text-heading scroll-mt-24">
+    <%= t("pages.privacy.app_title") %>
+  </h2>
+  <p class="mt-2 text-sm text-text-muted"><%= t("pages.privacy.app_updated") %></p>
+  <p class="mt-4 text-text-body"><%= t("pages.privacy.app_intro") %></p>
+  <p class="mt-4 text-text-body"><%= t("pages.privacy.agreement") %></p>
+
   <div class="mt-10">
-    <h2 class="text-2xl font-semibold text-text-heading">
-      <%= t("pages.privacy.rights.title") %>
-    </h2>
+    <h3 class="text-xl font-semibold text-text-heading"><%= t("pages.privacy.location_title") %></h3>
+    <p class="mt-4 text-text-body"><%= t("pages.privacy.location") %></p>
+  </div>
+
+  <div class="mt-10">
+    <h3 class="text-xl font-semibold text-text-heading"><%= t("pages.privacy.rights.title") %></h3>
     <ul class="mt-4 space-y-2">
       <% t("pages.privacy.rights.items").each do |item| %>
         <li class="flex items-start gap-2 text-text-body">
-          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-interactive flex-shrink-0" aria-hidden="true"></span>
+          <span class="mt-2 size-1.5 rounded-full bg-interactive shrink-0" aria-hidden="true"></span>
           <%= item %>
         </li>
       <% end %>
@@ -56,9 +107,7 @@
     <p>
       <%= t("pages.privacy.contact_text") %>
       <%= link_to t("pages.privacy.contact_link"), page_path(:contact),
-            class: "text-interactive underline hover:no-underline
-                    focus-ring rounded" %>.
+            class: "text-interactive underline hover:no-underline focus-ring rounded" %>.
     </p>
-    <p class="mt-2"><%= t("pages.privacy.updated") %>: <%= l Date.current, format: :long %></p>
   </div>
 </section>

@@ -108,18 +108,12 @@ RSpec.describe "Pages", type: :request do
       expect(response.body).to include(I18n.t("pages.privacy.title"))
     end
 
-    # Guards the :long format on the "last updated" stamp — switching the
-    # template to :short, or dropping the `l` call for a raw strftime, fails
-    # here. It does NOT guard locale overrides: a fork redefining
-    # date.formats.long moves the rendered output and an `I18n.l` expectation
-    # together, so the literal is the only version that can fail.
-    # Time is frozen because Date.current would otherwise be evaluated once in
-    # the request and once in the assertion — different values across midnight.
-    it "renders the updated-on date in the :long format" do
-      travel_to Time.zone.local(2026, 7, 25, 12, 0, 0) do
-        get page_path(:privacy)
-        expect(response.body).to include("July 25, 2026")
-      end
+    # Guards the :long format on the policy date. A raw strftime, or :short,
+    # renders a different literal. A fork that redefines date.formats.long
+    # moves this string too, so the expectation stays a literal on purpose.
+    it "renders the policy date in the :long format" do
+      get page_path(:privacy)
+      expect(response.body).to include("July 06, 2015")
     end
   end
 
@@ -128,6 +122,22 @@ RSpec.describe "Pages", type: :request do
       get page_path(:contact)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(I18n.t("pages.contact.hero.title"))
+    end
+  end
+
+  describe "GET /support" do
+    it "returns the support page" do
+      get page_path(:support)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("pages.support.title"))
+    end
+  end
+
+  describe "GET /sample_uses" do
+    it "returns the sample uses page" do
+      get page_path(:sample_uses)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("pages.sample_uses.title"))
     end
   end
 

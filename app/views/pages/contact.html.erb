@@ -1,9 +1,5 @@
 <% content_for(:title) { t("pages.contact.title") } %>
 
-<section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-  <h1 class="text-sm font-medium text-text-muted"><%= t("pages.contact.title") %></h1>
-</section>
-
 <%= render "shared/hero",
       title: t("pages.contact.hero.title"),
       subtitle: t("pages.contact.hero.subtitle") %>
@@ -12,18 +8,30 @@
       title: t("pages.contact.methods.title"),
       bg: "bg-surface" do %>
   <div class="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-    <%# The address key is also bin/fork's support-email substitution target
-        (#549) — rendering it here means a fork's swapped-in address is
-        actually VISIBLE on the contact page (it previously existed only as
-        fork machinery and never displayed, which is how #522's unused scan
-        almost deleted it). %>
-    <%= render "shared/feature_card",
-          title: t("pages.contact.methods.email.title"),
-          description: t("pages.contact.methods.email.description",
-                         address: t("pages.contact.methods.email.address")) %>
-    <%= render "shared/feature_card",
-          title: t("pages.contact.methods.bugs.title"),
-          description: t("pages.contact.methods.bugs.description") %>
+    <%= mail_to t("pages.contact.methods.email.address"),
+          subject: t("pages.support.email_subject"),
+          class: "p-6 bg-surface-raised rounded-lg border border-border
+                  hover:border-interactive focus-ring block" do %>
+      <h3 class="text-lg font-semibold text-text-heading">
+        <%= t("pages.contact.methods.email.title") %>
+      </h3>
+      <p class="mt-2 text-text-muted">
+        <%= t("pages.contact.methods.email.description",
+              address: t("pages.contact.methods.email.address")) %>
+      </p>
+    <% end %>
+    <%= link_to t("pages.contact.methods.company.url"),
+          target: "_blank", rel: "noopener noreferrer",
+          class: "p-6 bg-surface-raised rounded-lg border border-border
+                  hover:border-interactive focus-ring block" do %>
+      <h3 class="text-lg font-semibold text-text-heading">
+        <%= t("pages.contact.methods.company.title") %>
+      </h3>
+      <p class="mt-2 text-text-muted">
+        <%= t("pages.contact.methods.company.description") %>
+      </p>
+      <span class="sr-only"><%= t("pages.external.new_tab") %></span>
+    <% end %>
   </div>
 <% end %>
 
@@ -31,10 +39,19 @@
       title: t("pages.contact.community.title"),
       bg: "bg-surface-raised" do %>
   <div class="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-    <% %w[github discussions docs].each do |channel| %>
-      <%= render "shared/feature_card",
-            title: t("pages.contact.community.#{channel}.title"),
-            description: t("pages.contact.community.#{channel}.description") %>
+    <% %w[twitter facebook linkedin].each do |channel| %>
+      <%= link_to t("pages.contact.community.#{channel}.url"),
+            target: "_blank", rel: "noopener noreferrer",
+            class: "p-6 bg-surface rounded-lg border border-border
+                    hover:border-interactive focus-ring block" do %>
+        <h3 class="text-lg font-semibold text-text-heading">
+          <%= t("pages.contact.community.#{channel}.title") %>
+        </h3>
+        <p class="mt-2 text-text-muted">
+          <%= t("pages.contact.community.#{channel}.description") %>
+        </p>
+        <span class="sr-only"><%= t("pages.external.new_tab") %></span>
+      <% end %>
     <% end %>
   </div>
 <% end %>

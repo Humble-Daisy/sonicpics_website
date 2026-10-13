@@ -1,0 +1,10 @@
+# Fork provenance. bin/setup reads preset into .env, and template_baseline
+# records the modelrails_base commit this product started from.
+---
+name: sonicpics
+product_name: SonicPics
+preset: personal
+template_url: git@github.com:dschmura/modelrails_base.git
+template_baseline: 7116ec7cb147dd40345ba93dce4b44a4e3b36bc8
+forked_at: '2026-10-13'
+fork_script_version: '1.0.0'

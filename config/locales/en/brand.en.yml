@@ -3,7 +3,7 @@
 # in a fork without merge conflicts. See /docs/developer/forking.
 en:
   application:
-    name: "ModelRails"
-    description: "A multi-tenant SaaS starter kit built on Rails."
+    name: "SonicPics"
+    description: "Create, record, and share custom photo slideshows on iPhone, iPod touch, and iPad."
   footer:
-    copyright: "ModelRails. All rights reserved."
+    copyright: "Humble Daisy, Inc. All rights reserved."

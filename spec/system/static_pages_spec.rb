@@ -181,9 +181,9 @@ RSpec.describe "Static pages", type: :system do
     end
 
     it "displays feature cards" do
-      expect(page).to have_text(I18n.t("pages.home.features.auth.title"))
-      expect(page).to have_text(I18n.t("pages.home.features.workspaces.title"))
-      expect(page).to have_text(I18n.t("pages.home.features.projects.title"))
+      expect(page).to have_text(I18n.t("pages.home.features.slideshows.title"))
+      expect(page).to have_text(I18n.t("pages.home.features.narration.title"))
+      expect(page).to have_text(I18n.t("pages.home.features.sharing.title"))
     end
   end
 
@@ -229,7 +229,7 @@ RSpec.describe "Static pages", type: :system do
     end
   end
 
-  %w[about privacy contact].each do |page_name|
+  %w[about privacy contact support sample_uses].each do |page_name|
     describe "#{page_name} page" do
       it "renders with 200 status" do
         visit page_path(page_name)
@@ -243,7 +243,7 @@ RSpec.describe "Static pages", type: :system do
     # toggles to light, runs axe; toggles to dark, runs axe; ANDs the result.
     let(:axe_options) { { runOnly: { type: "tag", values: [ "wcag2aaa" ] } } }
 
-    %w[home about privacy contact].each do |page_name|
+    %w[home about privacy contact support sample_uses].each do |page_name|
       it "#{page_name} page passes automated accessibility checks (light + dark)" do
         path = page_name == "home" ? root_path : page_path(page_name)
         visit path

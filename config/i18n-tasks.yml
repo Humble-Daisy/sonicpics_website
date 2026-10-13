@@ -45,6 +45,7 @@ data:
     - ['errors.not_authorized', 'config/locales/%{locale}/application.%{locale}.yml']
     - ['errors.not_found', 'config/locales/%{locale}/application.%{locale}.yml']
     - ['footer.about', 'config/locales/%{locale}/application.%{locale}.yml']
+    - ['footer.support', 'config/locales/%{locale}/application.%{locale}.yml']
     - ['footer.aria.*', 'config/locales/%{locale}/application.%{locale}.yml']
     - ['footer.contact', 'config/locales/%{locale}/application.%{locale}.yml']
     - ['footer.cookie_settings', 'config/locales/%{locale}/application.%{locale}.yml']

@@ -1,0 +1,11 @@
+<% content_for(:title) { t("pages.sample_uses.title") } %>
+
+<%= render "shared/hero",
+      title: t("pages.sample_uses.title"),
+      subtitle: t("pages.sample_uses.subtitle"),
+      cta_primary: t("pages.home.hero.cta_primary"),
+      cta_primary_path: t("pages.home.app_store_url") %>
+
+<%= render "shared/section", bg: "bg-surface" do %>
+  <%= render "pages/sample_uses" %>
+<% end %>

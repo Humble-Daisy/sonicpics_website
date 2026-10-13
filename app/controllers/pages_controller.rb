@@ -4,7 +4,7 @@
 class PagesController < ApplicationController
   allow_unauthenticated_access
 
-  PAGES = %w[home about privacy contact].freeze
+  PAGES = %w[home about privacy contact support sample_uses].freeze
 
   def show
     raise ActionController::RoutingError, "No page #{params[:id].inspect}" unless PAGES.include?(params[:id])
