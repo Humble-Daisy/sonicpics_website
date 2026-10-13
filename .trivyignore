@@ -32,3 +32,11 @@ CVE-2026-56858
 CVE-2026-56859
 CVE-2026-56860
 CVE-2026-56862
+
+# thruster 0.1.26's binary is Go 1.27.0 and golang.org/x/net v0.58.0. These
+# are fixed in Go 1.27.2 and x/net 0.60.0. basecamp/thruster@42c3624
+# (2026-10-11) builds that, and the newest gem, 0.1.27 (2026-10-06), is
+# still go1.27.1. Revisit: on the next thruster release (> 0.1.27), or 2026-11-13.
+CVE-2026-78667
+CVE-2026-78669
+CVE-2026-97031

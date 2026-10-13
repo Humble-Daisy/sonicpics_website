@@ -1,8 +1,8 @@
 # Name of your application. Used to uniquely configure containers.
-service: modelrails_base
+service: sonicpics_website
 
 # Name of the container image (use your-user/app-name on external registries).
-image: modelrails_base
+image: sonicpics_website
 
 # === SQLite single-host constraint ===
 # This template defaults to SQLite (with Solid Queue/Cache/Cable in-process).
@@ -104,8 +104,9 @@ env:
     # supervisor — confirm puma-plugin-solid_queue's behavior before raising this.
     # WEB_CONCURRENCY: 2
 
-    # Match this to any external database server to configure Active Record correctly
-    # Use modelrails_base-db for a db accessory server on same machine via local kamal docker network.
+    # Match this to any external database server to configure Active Record correctly.
+    # Use sonicpics_website-db for a db accessory server on same machine via local kamal docker network.
+
     # DB_HOST: 192.168.0.2
 
     # Log everything from Rails
@@ -122,7 +123,7 @@ aliases:
 # Use a persistent storage volume for sqlite database files and local Active Storage files.
 # Recommended to change this to a mounted volume path that is backed up off server.
 volumes:
-  - "modelrails_base_storage:/rails/storage"
+  - "sonicpics_website_storage:/rails/storage"
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old

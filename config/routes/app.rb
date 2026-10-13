@@ -7,4 +7,4 @@
 # (PagesController::PAGES). Add a page by adding its template, its name here,
 # and its name to PAGES.
 root to: "pages#show", defaults: { id: "home" }
-resources :pages, only: :show, path: "", constraints: { id: /about|privacy|contact/ }
+resources :pages, only: :show, path: "", constraints: { id: /about|privacy|contact|support|sample_uses/ }

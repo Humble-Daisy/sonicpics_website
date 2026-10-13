@@ -1,0 +1,10 @@
+# Fork provenance, written by bin/fork. Do not gate on this file; live state is derived.
+# Committed so bin/setup reads preset and template_baseline travels with the clone.
+---
+name: sonicpics_website
+product_name: Sonicpics Website
+preset: shared
+template_url: git@github.com:dschmura/modelrails_base.git
+template_baseline: b2d925867d186b9923757dfe1d8fb76bae757a75
+forked_at: '2026-10-13'
+fork_script_version: 1.0.0

@@ -19,7 +19,7 @@ require "action_cable/engine"
 Bundler.require(*Rails.groups)
 require_relative "bullet_on_rails_main" if Rails.env.local?
 
-module ModelrailsBase
+module SonicpicsWebsite
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.2

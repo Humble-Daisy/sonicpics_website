@@ -1,0 +1,17 @@
+<div class="grid sm:grid-cols-2 gap-8">
+  <% %w[first second].each do |column| %>
+    <div>
+      <h3 class="text-xl font-semibold text-text-heading">
+        <%= t("pages.sample_uses.columns.#{column}.heading") %>
+      </h3>
+      <ul class="mt-4 space-y-2">
+        <% t("pages.sample_uses.columns.#{column}.items").each do |item| %>
+          <li class="flex items-start gap-2 text-text-body">
+            <span class="mt-2 size-1.5 rounded-full bg-interactive shrink-0" aria-hidden="true"></span>
+            <%= item %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</div>
