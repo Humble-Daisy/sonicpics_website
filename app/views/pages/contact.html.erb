@@ -42,7 +42,7 @@
     <% %w[twitter facebook linkedin].each do |channel| %>
       <%= link_to t("pages.contact.community.#{channel}.url"),
             target: "_blank", rel: "noopener noreferrer",
-            class: "p-6 bg-surface rounded-lg border border-border
+            class: "p-6 bg-surface-overlay rounded-lg border border-border
                     hover:border-interactive focus-ring block" do %>
         <h3 class="text-lg font-semibold text-text-heading">
           <%= t("pages.contact.community.#{channel}.title") %>

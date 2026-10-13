@@ -108,9 +108,7 @@ RSpec.describe "Pages", type: :request do
       expect(response.body).to include(I18n.t("pages.privacy.title"))
     end
 
-    # Guards the :long format on the policy date. A raw strftime, or :short,
-    # renders a different literal. A fork that redefines date.formats.long
-    # moves this string too, so the expectation stays a literal on purpose.
+    # A literal: a redefined date.formats.long changes this string.
     it "renders the policy date in the :long format" do
       get page_path(:privacy)
       expect(response.body).to include("July 06, 2015")
