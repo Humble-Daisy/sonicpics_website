@@ -138,6 +138,16 @@ RSpec.describe User, type: :model do
       expect(user).to be_persisted
       expect(user).to be_valid
     end
+
+    # Under a stub the trait cannot do what it says, and restoring through the stubbed reader
+    # writes the stub's value into the real config for every later example.
+    it "refuses to run while tenancy onboarding is stubbed, and leaves the real config alone" do
+      real = Rails.configuration.x.tenancy[:onboarding]
+      allow(Rails.configuration.x.tenancy).to receive(:onboarding).and_return(:shared)
+
+      expect { create(:user, :with_zero_workspaces) }.to raise_error(/stubbed/)
+      expect(Rails.configuration.x.tenancy[:onboarding]).to eq(real)
+    end
   end
 
   describe "#onboarded?" do

@@ -115,12 +115,18 @@ FactoryBot.define do
     # still onboard normally. Used by zero-workspace crash-safety specs.
     trait :with_zero_workspaces do
       to_create do |user|
-        original = Rails.configuration.x.tenancy.onboarding
-        Rails.configuration.x.tenancy.onboarding = :none
+        # [] reads and writes past a stubbed #onboarding reader, so the restore never writes a stub's value back.
+        tenancy = Rails.configuration.x.tenancy
+        if tenancy.onboarding != tenancy[:onboarding]
+          raise "with_zero_workspaces cannot run while tenancy onboarding is stubbed: create the user before the stub"
+        end
+
+        original = tenancy[:onboarding]
+        tenancy[:onboarding] = :none
         begin
           user.save!
         ensure
-          Rails.configuration.x.tenancy.onboarding = original
+          tenancy[:onboarding] = original
         end
       end
     end
