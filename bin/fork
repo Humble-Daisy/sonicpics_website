@@ -654,10 +654,8 @@ class ForkFlow
     return if dry_run?
 
     header = <<~HEADER
-      # Fork provenance — written by bin/fork. Do not gate on this file; live
-      # state is derived from the repository. Committed so every clone inherits
-      # the decisions: bin/setup reads `preset` into a teammate's .env, and
-      # `template_baseline` answers "based on which template version?".
+      # Fork provenance, written by bin/fork. Do not gate on this file; live state is derived.
+      # Committed so bin/setup reads preset and template_baseline travels with the clone.
     HEADER
     atomic_write(path_to(FORK_FILE), header + YAML.dump(data.compact))
     @fork_config = nil
