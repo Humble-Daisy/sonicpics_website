@@ -1,10 +1,12 @@
-# Fork provenance. bin/setup reads preset into .env, and template_baseline
-# records the modelrails_base commit this product started from.
+# Fork provenance — written by bin/fork. Do not gate on this file; live
+# state is derived from the repository. Committed so every clone inherits
+# the decisions: bin/setup reads `preset` into a teammate's .env, and
+# `template_baseline` answers "based on which template version?".
 ---
-name: sonicpics
-product_name: SonicPics
-preset: personal
+name: sonicpics_website
+product_name: Sonicpics Website
+preset: shared
 template_url: git@github.com:dschmura/modelrails_base.git
-template_baseline: 7116ec7cb147dd40345ba93dce4b44a4e3b36bc8
+template_baseline: b2d925867d186b9923757dfe1d8fb76bae757a75
 forked_at: '2026-10-13'
-fork_script_version: '1.0.0'
+fork_script_version: 1.0.0

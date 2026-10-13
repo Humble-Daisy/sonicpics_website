@@ -85,7 +85,7 @@ jobs:
           load: true
           no-cache: true
           platforms: linux/amd64
-          tags: modelrails_base:scan-${{ github.sha }}
+          tags: sonicpics_website:scan-${{ github.sha }}
 
       # ignore-unfixed: Debian-stable bases always carry CVEs with no fixed
       # package yet; gating on them would make this permanently red and
@@ -93,7 +93,7 @@ jobs:
       - name: Scan for HIGH/CRITICAL CVEs with a fix available
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: modelrails_base:scan-${{ github.sha }}
+          image-ref: sonicpics_website:scan-${{ github.sha }}
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true
