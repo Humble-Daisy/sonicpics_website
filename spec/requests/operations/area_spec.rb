@@ -182,6 +182,25 @@ RSpec.describe "Operations area", type: :request do
       expect(Capybara.string(response.body)).to have_css('nav ul[role="list"]')
     end
 
+    # The fork seam: a fork's pages join the nav after the template's, with the same current-page cue.
+    # allow_any_instance_of because the view context is built per request.
+    it "appends the fork's nav items after the template's" do
+      allow_any_instance_of(Operations::ForkNavHelper)
+        .to receive(:operations_fork_nav_items).and_return([ [ "Fork page", operations_users_path ] ])
+
+      get operations_users_path
+
+      links = Capybara.string(response.body).all("nav ul li a")
+      expect(links.map(&:text).last).to eq("Fork page")
+      expect(links.select { |link| link[:"aria-current"] == "page" }.map(&:text)).to include("Fork page")
+    end
+
+    it "adds no nav items of its own when the fork lists none" do
+      get operations_workspaces_path
+
+      expect(Capybara.string(response.body).all("nav ul li").size).to eq(4)
+    end
+
     # WCAG 2.4.8 Location (AAA, outside the axe tag set). The cue matches
     # shared/_settings_sidebar_item — a filled surface, a weight bump and a
     # heading-colour shift together — rather than weight alone: this app's

@@ -39,6 +39,8 @@ public/favicon.ico merge=ours
 # The fork's names for the product's nouns. Holds nothing upstream will ever
 # change (defaults live in config/vocabulary.yml), so freezing it is safe.
 config/vocabulary.local.yml merge=ours
+# A fork's own operations pages, listed for the operations nav. Empty upstream, so freezing it is safe.
+app/helpers/operations/fork_nav_helper.rb merge=ours
 # Where a fork registers its own project tools. The registry API that reads this
 # file is template-owned, so an API change still breaks a frozen fork initializer
 # loudly at boot — the same posture as config/routes/app.rb.
