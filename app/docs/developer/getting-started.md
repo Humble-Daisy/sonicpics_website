@@ -248,7 +248,7 @@ Runs the same checks plus additional linting:
 | `lint` | RuboCop with GitHub annotations |
 | `lint_docs` | `mdl` (markdown) + `erb_lint` (ERB) |
 | `test` | Full RSpec with Cuprite, axe accessibility, screenshot artifacts on failure |
-| `docker_build` | Verifies the production `Dockerfile` builds successfully on every PR (catches build-time regressions that structural specs cannot). Uses GHA layer caching — cold builds ~3-5 min, warm builds ~30-60s. See [Deployment](/docs/developer/deployment). |
+| `docker_build` | Verifies the production `Dockerfile` builds (catches build-time regressions that structural specs cannot). Its own workflow: a pull request runs it only when a build input changes (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`); every push to `main` runs it unfiltered. The pre-push hook runs the same build locally through `bin/docker-build-check` on the same inputs. Uses GHA layer caching — cold builds ~3-5 min, warm builds ~30-60s. See [Deployment](/docs/developer/deployment). |
 
 ### Gate 3: Scheduled lanes (not on push/PR)
 

@@ -452,14 +452,62 @@ RSpec.describe "Template invariants" do
     # COPY regression from #129 (fixed in #132). The only safety net for that
     # class of bug is running `docker build .` in CI. These assertions ensure
     # that safety net stays wired up.
-    let(:ci_workflow_path) { root.join(".github/workflows/ci.yml") }
-    let(:ci_workflow) { YAML.safe_load(File.read(ci_workflow_path), aliases: true) }
-    let(:docker_build_job) { ci_workflow.dig("jobs", "docker_build") }
+    let(:build_workflow_path) { root.join(".github/workflows/docker_build.yml") }
+    let(:build_workflow) { YAML.safe_load(File.read(build_workflow_path), aliases: true) }
+    # Psych (YAML 1.1) parses the unquoted `on:` trigger key as boolean true.
+    let(:build_triggers) { build_workflow[true] }
+    let(:docker_build_job) { build_workflow.dig("jobs", "docker_build") }
+    let(:lefthook_config) { YAML.safe_load(File.read(root.join("lefthook.yml")), aliases: true) }
+    let(:build_inputs) { %w[Dockerfile .dockerignore Gemfile Gemfile.lock .tool-versions bin/docker-entrypoint] }
 
-    it "has a docker_build job in .github/workflows/ci.yml" do
-      expect(docker_build_job).not_to be_nil,
-        "expected a `docker_build` job in CI so the production Dockerfile is verified to " \
-        "build on every PR. Without this, build-time regressions can ship to main (see #129 -> #132)."
+    it "has a docker_build workflow with a docker_build job" do
+      expect(File.exist?(build_workflow_path)).to be(true),
+        "expected .github/workflows/docker_build.yml so the production Dockerfile is verified " \
+        "to build. Without it, build-time regressions can ship to main (see #129 -> #132)."
+      expect(docker_build_job).not_to be_nil, "expected a `docker_build` job in docker_build.yml"
+    end
+
+    it "builds on a pull request only when a build input changes, and on every push to main" do
+      expect(build_triggers.dig("pull_request", "paths"))
+        .to include(*build_inputs, ".github/workflows/docker_build.yml"),
+        "expected pull_request.paths to name every file the Dockerfile's early layers COPY, " \
+        "plus the workflow itself — a PR touching none of them does not pay for a build"
+      expect(build_triggers.dig("push", "branches")).to include("main"),
+        "expected a push trigger on main as the unfiltered backstop"
+      expect(build_triggers["push"]).not_to have_key("paths"),
+        "expected the push-to-main run to be unfiltered: `COPY . .` makes every file a build " \
+        "input, so the merged tree is proven to build even when a PR's paths did not trigger it"
+    end
+
+    it "Lefthook's pre-push builds the image on the same inputs, diffed against main" do
+      command = lefthook_config.dig("pre-push", "commands", "docker_build") || {}
+
+      expect(command["run"].to_s).to include("bin/docker-build-check"),
+        "expected the pre-push docker_build command to run bin/docker-build-check so a local " \
+        "push of a build-input change proves the image builds before CI does"
+      expect(command["files"].to_s).to include("origin/main"),
+        "expected `files:` to diff against origin/main — the push range is empty on a branch's " \
+        "first push (lefthook.yml's skip_empty note), which would silently skip the gate"
+      build_inputs.each do |input|
+        expect(command["glob"].to_s).to include(input),
+          "expected the pre-push glob to name #{input}, the same build inputs the workflow's " \
+          "pull_request.paths names — the two lists must stay in sync"
+      end
+    end
+
+    it "runs the image build last: every other pre-push command carries a priority, it does not" do
+      commands = lefthook_config.dig("pre-push", "commands") || {}
+      others = commands.except("docker_build")
+
+      expect(others).not_to be_empty
+      others.each do |name, config|
+        expect(config["priority"]).to be_a(Integer).and(be > 0),
+          "expected pre-push command #{name} to carry priority: N — lefthook runs piped commands " \
+          "alphabetically unless told otherwise, and 0 or unset means last; the slow image build " \
+          "must come after the fast gates and the suite"
+      end
+      expect(commands.fetch("docker_build", {})).not_to have_key("priority"),
+        "expected docker_build to carry no priority (0 = run at the very end)"
     end
 
     it "docker_build job uses Buildx + build-push-action for native GHA layer caching" do

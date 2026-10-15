@@ -22,18 +22,14 @@ pre-commit:
       run: mise exec -- bin/rails runner spec/migrations/support/fresh_migrate_probe.rb
 
 pre-push:
-  # Sequential ordering with stop-on-first-failure. Critical because
-  # `tailwind_build` rewrites app/assets/builds/tailwind.css and `rspec`'s
-  # Cuprite system tests load that file from the dev server. Running the
-  # two in parallel produced a race window (~1-2s) where early specs read a
-  # partial CSS file and axe-core reported phantom contrast violations on
-  # static, members, and docs pages. Ordering tailwind_build first
-  # guarantees rspec sees the freshly-built CSS deterministically.
+  # piped runs commands by priority (alphabetically without one; unset = last): the stylesheet
+  # must be built before rspec's system specs read it, and the slow image build goes last.
   piped: true
   commands:
     tailwind_build:
       tags: assets
       skip_empty: false
+      priority: 1
       run: mise exec -- bin/rails tailwindcss:build
       skip:
         - merge
@@ -41,6 +37,7 @@ pre-push:
     brakeman:
       tags: security
       skip_empty: false
+      priority: 2
       run: mise exec -- bundle exec brakeman --no-pager -q
       skip:
         - merge
@@ -54,6 +51,7 @@ pre-push:
       # scan_js is deliberately not mirrored: it POSTs to the npm registry (#984).
       tags: security
       skip_empty: false
+      priority: 3
       run: mise exec -- bin/bundler-audit
       skip:
         - merge
@@ -61,6 +59,7 @@ pre-push:
     rubocop:
       tags: style
       skip_empty: false
+      priority: 4
       run: mise exec -- bundle exec rubocop -f simple
       skip:
         - merge
@@ -72,6 +71,7 @@ pre-push:
       # never actually removed the Node dependency it appeared to.
       tags: style
       skip_empty: false
+      priority: 5
       run: mise exec -- bundle exec rake erb:check
       skip:
         - merge
@@ -84,6 +84,7 @@ pre-push:
       # so this adds negligible push latency.
       tags: style
       skip_empty: false
+      priority: 6
       run: mise exec -- bundle exec rake markdown:check
       skip:
         - merge
@@ -91,12 +92,23 @@ pre-push:
     rspec:
       tags: test
       skip_empty: false
+      priority: 7
       env:
         CI: "true"
       # bin/parallel-rspec = full suite across all cores + integrity gates
       # (example-count parity, merged coverage floor). Same gates as CI's test
       # job. Worker count: PARALLEL_TEST_PROCESSORS env or core count.
       run: mise exec -- bin/parallel-rspec
+      skip:
+        - merge
+        - rebase
+    docker_build:
+      tags: build
+      # Diffed against main, not the push range: a branch's first push has no
+      # range and would skip the gate. Same inputs as docker_build.yml's paths.
+      files: git diff --name-only origin/main...HEAD
+      glob: "{Dockerfile,.dockerignore,Gemfile,Gemfile.lock,.tool-versions,bin/docker-entrypoint}"
+      run: mise exec -- bin/docker-build-check
       skip:
         - merge
         - rebase

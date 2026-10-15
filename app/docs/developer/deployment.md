@@ -185,7 +185,7 @@ bin/kamal setup     # First-time only — installs Docker on the host
 bin/kamal deploy    # Subsequent deploys
 ```
 
-The `docker_build` CI job (see [Getting Started](/docs/developer/getting-started)) verifies your production image builds successfully on every PR, so the first time you run `kamal deploy` you're not also debugging Dockerfile issues.
+The `docker_build` workflow (see [Getting Started](/docs/developer/getting-started)) verifies your production image builds on every pull request that touches a build input and on every push to `main`, and the pre-push hook runs the same build locally when you change one, so the first time you run `kamal deploy` you're not also debugging Dockerfile issues.
 
 Once the app is up, mint the first instance operator — see [Instance operations: Day one](operations#day-one-on-an-invite-only-instance).
 

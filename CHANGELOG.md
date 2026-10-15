@@ -25,6 +25,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Changed
 
+- The production image build is its own workflow: a pull request runs it only when a build input changes (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`) and every push to `main` runs it unfiltered; the pre-push hook runs the same build locally through `bin/docker-build-check` on the same inputs.
 - The timezone beacon renders only while a user's timezone is unset, so a Turbo visit no longer sends a PATCH; the passkey, identity-picker and beacon requests stop attaching an authenticity token that header-only CSRF never reads (#1351).
 - The sidebar spec moves the pointer off the rail before it checks the tooltip bubble is hidden, so a pointer left over the rail by an earlier spec can no longer hover the bubble in and fail it.
 - The identity picker specs wait for the hub to render, not only to load, so a late render can no longer save the default hue in place of the dragged one (#1344).

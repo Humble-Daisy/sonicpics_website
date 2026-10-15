@@ -73,8 +73,8 @@ class ForkFlow
       [ "support@example.com", :support_email ]
     ],
     "public/manifest.webmanifest"      => [ [ %("#{TEMPLATE_BRAND}"), :quoted_title ] ],
-    ".github/workflows/ci.yml"         => [ [ "#{TEMPLATE_TOKEN}:", :snake_colon ] ],
-    ".github/workflows/image_scan.yml" => [ [ "#{TEMPLATE_TOKEN}:", :snake_colon ] ]
+    ".github/workflows/docker_build.yml" => [ [ "#{TEMPLATE_TOKEN}:", :snake_colon ] ],
+    ".github/workflows/image_scan.yml"   => [ [ "#{TEMPLATE_TOKEN}:", :snake_colon ] ]
   }.freeze
 
   RENAME_FILES = SUBSTITUTIONS.keys.freeze
