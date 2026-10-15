@@ -130,23 +130,23 @@ jobs:
       - name: Check ERB templates
         run: bundle exec rake erb:check
 
-  # Eight-shard test matrix (#495): the Run tests step alone was ~11:40 of a
-  # ~13 min job, and standard runners are free on a public repo (8 shards +
-  # 6 other jobs = 14 of the 20-concurrent allowance). Wall-clock model:
-  # ~95s fixed per shard + ~660s of spec work / N + ~70s merge tail — N=2
-  # measured 6:53/shard; N=8 targets ~4 min total, near the ~3 min floor set
-  # by fixed overhead, so more shards buy little beyond this. Each shard
-  # takes a runtime-balanced half of the spec files (split computed by
-  # bin/parallel-rspec from the split_seed snapshot, so every shard sees
-  # IDENTICAL input — a live log diverges), keeps 4 in-job workers, and runs
-  # its own example-count parity. The cross-shard checks (shard-union parity,
-  # merged 90% coverage floor, runtime-log reassembly) happen once in
-  # coverage_merge, and the `test` summary job below keeps the branch
-  # ruleset's required status context stable.
+  # Sharded test matrix (#495, PR #615), shaped by the CI_SHARDS and CI_WORKERS repository
+  # variables; the cross-shard checks run once in coverage_merge. /docs/developer/testing
   split_seed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      total: ${{ steps.shape.outputs.total }}
+      indices: ${{ steps.shape.outputs.indices }}
     steps:
+      - name: Publish the shard count (CI_SHARDS repository variable, default 8)
+        id: shape
+        env:
+          CI_SHARDS: ${{ vars.CI_SHARDS || 8 }}
+        run: |
+          echo "total=$CI_SHARDS" >> "$GITHUB_OUTPUT"
+          echo "indices=$(jq -cn --argjson n "$CI_SHARDS" '[range($n)]')" >> "$GITHUB_OUTPUT"
+
       - name: Restore recorded spec runtimes
         # The unique per-sha key always misses on a fresh commit, so
         # restore-keys pulls the newest prior log — on a PR that resolves to
@@ -180,14 +180,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        shard: ${{ fromJSON(needs.split_seed.outputs.indices) }}
     env:
       RAILS_ENV: test
       CI: true
-      # Pin workers to the runner's 4 vCPUs (deterministic split + DB count).
-      PARALLEL_TEST_PROCESSORS: "4"
+      # Workers per shard: the public runner's 4 vCPUs unless CI_WORKERS says otherwise.
+      PARALLEL_TEST_PROCESSORS: ${{ vars.CI_WORKERS || 4 }}
       CI_SHARD_INDEX: ${{ matrix.shard }}
-      CI_SHARD_TOTAL: "8"
+      CI_SHARD_TOTAL: ${{ needs.split_seed.outputs.total }}
       # #740: parallel db:prepare on a fresh runner races railties'
       # non-atomic generate_local_secret (tmp/local_secret.txt) — a reader can
       # binread "" mid-write and fail boot. A fixed test-only value skips the
@@ -236,10 +236,8 @@ jobs:
         run: cp tmp/seed/parallel_runtime_rspec.log tmp/runtime_seed.log
 
       - name: Restore recorded spec runtimes (seeds the IN-shard worker split)
-        # Separate from the shard seed on purpose: parallel_tests reads the
-        # live log to balance this shard's 4 workers; the frozen seed balances
-        # files ACROSS shards. Restore-only — the reassembled log is saved by
-        # coverage_merge.
+        # Separate from the frozen shard seed: this live log balances the IN-shard workers, the
+        # seed balances files ACROSS shards. Restore-only — coverage_merge saves the reassembled log.
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: tmp/parallel_runtime_rspec.log
@@ -247,7 +245,7 @@ jobs:
           restore-keys: |
             parallel-runtime-
 
-      - name: Run tests (shard ${{ matrix.shard }} of 8)
+      - name: Run tests (shard ${{ matrix.shard }} of ${{ needs.split_seed.outputs.total }})
         # Shard slice + in-shard parallel suite + per-shard example-count
         # parity. The merged 90% coverage floor is enforced once, across all
         # shards, in coverage_merge — see bin/parallel-rspec.

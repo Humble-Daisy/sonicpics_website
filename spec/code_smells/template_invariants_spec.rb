@@ -552,6 +552,24 @@ RSpec.describe "Template invariants" do
         "suite + per-shard parity); a raw rspec invocation loses those gates"
     end
 
+    it "takes the shard count and worker count from repository variables, defaulting to the public-runner shape" do
+      split_seed_env = Array(ci_workflow.dig("jobs", "split_seed", "steps")).map { |s| s["env"].to_h.values.join(" ") }.join(" ")
+      shard_job = ci_workflow.dig("jobs", "test_shard") || {}
+
+      expect(split_seed_env).to include("vars.CI_SHARDS || 8"),
+        "expected split_seed to read `vars.CI_SHARDS || 8` into a step env — a fork sets the " \
+        "variable in its Actions settings instead of editing a tracked file (private forks are " \
+        "billed per job; 8 shards is the free public-runner shape, not every fork's)"
+      expect(shard_job.dig("strategy", "matrix", "shard").to_s).to include("fromJSON(needs.split_seed.outputs.indices)"),
+        "expected the shard matrix to come from split_seed's `indices` output, not a literal list"
+      expect(shard_job.dig("env", "CI_SHARD_TOTAL").to_s).to include("needs.split_seed.outputs.total"),
+        "expected CI_SHARD_TOTAL to come from split_seed's `total` output so the split and the " \
+        "matrix can never disagree"
+      expect(shard_job.dig("env", "PARALLEL_TEST_PROCESSORS").to_s).to include("vars.CI_WORKERS || 4"),
+        "expected PARALLEL_TEST_PROCESSORS to read `vars.CI_WORKERS || 4` — pinned to the public " \
+        "runner's 4 vCPUs by default; a fork on a smaller runner sets its own"
+    end
+
     it "the merged coverage floor and shard-union parity run in coverage_merge" do
       run_steps = Array(ci_workflow.dig("jobs", "coverage_merge", "steps")).map { |s| s["run"].to_s }
       expect(run_steps).to include(match(%r{bin/ci-coverage-merge})),
