@@ -69,6 +69,7 @@ class ParallelRspecRunner
     select_shard!
     enumerate!
     puts "==> Expecting #{expected_count} examples#{shard? ? " (shard #{shard_index + 1}/#{shard_total})" : ''}"
+    prepare_databases!
     build_assets!
     run_suite!
     verify_count!
@@ -117,6 +118,14 @@ class ParallelRspecRunner
     puts "==> Building Tailwind CSS (system specs render unstyled without it)"
     system("bundle", "exec", "rails", "tailwindcss:build") ||
       abort("parallel-rspec: tailwindcss:build failed (see output above)")
+  end
+
+  # db:setup, not db:seed alone: a seed into a stale schema is purged when the
+  # worker boots (maintain_test_schema!), leaving the table empty — see PR body.
+  def prepare_databases!
+    puts "==> Reloading the schema and seeds into every worker database"
+    system("bundle", "exec", "rake", "parallel:setup") ||
+      abort("parallel-rspec: parallel:setup failed (see output above)")
   end
 
   private

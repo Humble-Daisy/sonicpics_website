@@ -51,9 +51,6 @@ jobs:
       - name: Verify Chrome is available (Cuprite/ferrum connects to the runner's pre-installed browser)
         run: google-chrome --version || chromium-browser --version || chromium --version
 
-      - name: Prepare parallel test databases
-        run: bundle exec rake "parallel:rake[db:prepare]"
-
       - name: Set up gem source symlinks for Tailwind
         run: bundle exec rake tailwind:setup_gem_sources
 

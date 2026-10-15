@@ -13,7 +13,7 @@ How the test suite is put together: the parallel runner and CI sharding, the con
 ### Two ways to run the suite
 
 - `bundle exec rspec` is the single-process reference path — always correct, just slow.
-- `bin/parallel-rspec` is the full-suite path: it runs the suite across all cores via `parallel_tests`, with two integrity gates layered on top of pass/fail.
+- `bin/parallel-rspec` is the full-suite path: it runs the suite across all cores via `parallel_tests`, with two integrity gates layered on top of pass/fail. Before the run it reloads the schema into every worker database and seeds it, so the pre-push suite and CI's shards both start from the same four global roles; a bare `rspec` does no seeding of its own.
 
 The two gates exist because a parallel splitter can silently drop work:
 

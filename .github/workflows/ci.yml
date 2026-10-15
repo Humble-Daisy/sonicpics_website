@@ -220,11 +220,6 @@ jobs:
         # problem instead of 100+ confusing system-spec driver errors.
         run: google-chrome --version || chromium-browser --version || chromium --version
 
-      - name: Prepare parallel test databases
-        # db:prepare per worker (create + schema + seeds), matching the
-        # single-database semantics this job had before parallelization.
-        run: bundle exec rake "parallel:rake[db:prepare]"
-
       - name: Set up gem source symlinks for Tailwind
         run: bundle exec rake tailwind:setup_gem_sources
 
