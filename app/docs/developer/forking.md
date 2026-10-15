@@ -528,7 +528,8 @@ Three guardrails before you open the PR:
 - **When you must edit any template file** (an initializer, `application.rb`),
   make the edit additive — append rather than rewrite.
 - **`.github/` is template-owned and churns weekly** — 33+ action refs are
-  SHA-pinned and bumped by grouped Dependabot PRs, and the suite's pin
+  SHA-pinned and bumped by grouped Dependabot PRs (gem bumps arrive the same
+  way, one grouped PR a week), and the suite's pin
   invariant fails on ANY unpinned `uses:` (yours included). Add fork CI as
   new workflow files, SHA-pinned with the `# <tag>` trailer the invariant
   reads; never edit the template's workflows in place.

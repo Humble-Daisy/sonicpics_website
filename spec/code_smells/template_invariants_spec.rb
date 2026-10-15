@@ -1566,6 +1566,16 @@ RSpec.describe "Template invariants" do
         "Dependabot's cooldown has proposed it as a downgrade three times (#665, #888, #1261)"
     end
 
+    it "groups bundler updates into one weekly pull request, as the actions already are" do
+      groups = Array(bundler_updates && bundler_updates["groups"]&.values)
+      patterns = groups.flat_map { |group| Array(group["patterns"]) }
+
+      expect(patterns).to include("*"),
+        "expected the bundler block to carry a group matching \"*\" — one PR per week instead " \
+        "of one per gem. Each ungrouped bump fires CI, Image Scan and Devcontainer on every fork; " \
+        "on a private fork that was ~87 billed minutes per gem, six gems in one morning (2026-10-14)"
+    end
+
     it "ignores exactly the gems the lockfile takes from git" do
       lockfile = Bundler::LockfileParser.new(File.read(root.join("Gemfile.lock")))
       from_git = lockfile.specs.select { |s| s.source.is_a?(Bundler::Source::Git) }.map(&:name).uniq.sort
