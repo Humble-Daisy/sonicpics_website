@@ -188,6 +188,9 @@ en:
         rotate_help: "Rotating issues a new link valid for seven days and disables the current one."
       update:
         success: "Settings updated."
+    logos:
+      destroy:
+        success: "Logo removed."
     brandings:
       source_unavailable: "That identity source is not available."
       edit:

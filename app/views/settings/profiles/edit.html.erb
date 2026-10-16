@@ -36,6 +36,7 @@
       <%= render "shared/identity_picker",
             model: @user,
             form_url: settings_avatar_path,
+            remove_url: settings_avatar_path,
             hub_url: settings_avatar_path,
             hub_title: t("identity_picker.choose_profile_picture"),
             crop_title: t("identity_picker.adjust_profile_picture") %>

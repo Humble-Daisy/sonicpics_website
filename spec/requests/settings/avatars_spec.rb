@@ -17,6 +17,17 @@ RSpec.describe "Account Avatars", type: :request do
     let(:user) { create(:user) }
     before { sign_in(user) }
 
+    describe "the profile page's Remove photo button" do
+      it "removes the avatar" do
+        get edit_settings_profile_path
+
+        # The crop section renders `hidden` until a photo is chosen.
+        remove = Capybara.string(response.body).find("form", text: I18n.t("identity_picker.remove_photo"), visible: :all)
+        expect(remove[:action]).to eq(settings_avatar_path)
+        expect(remove).to have_field("_method", type: :hidden, with: "delete", visible: :all)
+      end
+    end
+
     describe "PATCH /account/avatar" do
       it "uploads an avatar and redirects to profile edit page" do
         file = fixture_file_upload("avatar.png", "image/png")

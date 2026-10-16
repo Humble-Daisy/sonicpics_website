@@ -102,4 +102,6 @@ When a user re-opens the crop view for an existing upload, the original (uncropp
 
 ## Removing an Image
 
-The delete action (`DELETE /account/avatar` or `DELETE /workspaces/:slug/branding`) purges both attachments and resets the source to "initials". This uses a standard `button_to` with `method: :delete` — no custom JavaScript fetch needed.
+The delete action (`DELETE /account/avatar` or `DELETE /workspaces/:slug/logo`) purges both attachments and resets the source to "initials". This uses a standard `button_to` with `method: :delete` — no custom JavaScript fetch needed.
+
+The picker takes the remove target as its own required local, `remove_url:`, separate from `form_url:`, which is where saves go. They are different resources: a workspace's logo saves through `workspaces#update`, so passing its `form_url` as the remove target would send **Remove photo** to `workspaces#destroy` and discard the whole workspace (#1402). A new caller names both.

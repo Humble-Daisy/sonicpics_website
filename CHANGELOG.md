@@ -69,6 +69,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Fixed
 
+- **Remove photo on a workspace's logo removes the logo, not the workspace.** It sent `DELETE` to the workspace itself, which soft-deleted it; it now targets a logo endpoint that resets the logo to initials (#1402).
 - `bin/parallel-rspec` reloads the schema and seeds every worker database before the suite, so a pre-push run starts from the same global roles CI does instead of an empty table; CI's shards no longer prepare databases in a separate step.
 - Under Reduce Motion the sidebar no longer animates its width when it collapses (its labels still fade), and the rich-text editor's block caret stops blinking; the motion guard now reads `transition-[…]` lists (#1350).
 - A mail send that could not reach the SMTP server (connect timeout, refused connection, busy reply) retries for about seven minutes instead of losing the sign-in link, and `bin/deploy-guide` names the SMTP settings (#1349).

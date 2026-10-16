@@ -1,0 +1,9 @@
+<%# locals: (workspace:) %>
+<span id="workspace_logo_branding" class="block relative">
+  <%= workspace_icon_for(workspace, size: :lg) %>
+  <span class="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/20
+               transition-colors flex items-center justify-center">
+    <%= icon(:pencil, size: :sm,
+          class: "text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md") %>
+  </span>
+</span>

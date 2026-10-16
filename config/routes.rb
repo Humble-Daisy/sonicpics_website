@@ -109,8 +109,8 @@ Rails.application.routes.draw do
     scope module: :workspaces do
       # Archived is a state, so it is a singular resource: POST archives, DELETE restores (#1007).
       resource :archival, only: [ :create, :destroy ]
-      # The logo picker hub; saves post to workspaces#update, where the logo lives (#1007).
-      resource :logo, only: [ :show ]
+      # The logo picker hub and logo removal; saves post to workspaces#update, where the logo lives (#1007, #1402).
+      resource :logo, only: [ :show, :destroy ]
       resources :members, only: [ :index, :edit, :update, :destroy ] do
         # Deactivating is members#destroy; reactivating creates a reactivation (#1007).
         scope module: :members do

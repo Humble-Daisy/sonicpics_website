@@ -57,4 +57,24 @@ RSpec.describe "Workspace Profile destination", type: :system do
     expect(axe_clean_in_both_themes?(axe_options)).to be(true),
       "Accessibility violations:\n#{axe_violations_in_both_themes(axe_options).join("\n")}"
   end
+
+  describe "removing the logo (#1402)" do
+    let(:workspace) { create(:workspace, :with_logo, name: "Acme Corp") }
+
+    it "removes the logo and keeps the workspace" do
+      visit edit_workspace_path(workspace)
+      open_identity_picker
+      enter_crop_view
+
+      remove_photo_expecting_modal_close
+
+      expect(page).to have_current_path(edit_workspace_path(workspace))
+      expect(page).to have_css("#workspace-name-heading", text: "Acme Corp")
+      workspace.reload
+      expect(workspace.discarded_at).to be_nil
+      expect(workspace.logo_source).to eq("initials")
+      expect(workspace.logo).not_to be_attached
+      expect(workspace.logo_original).not_to be_attached
+    end
+  end
 end
