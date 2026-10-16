@@ -22,6 +22,10 @@ The identity picker is a two-view component:
 | `identity-picker` | Orchestrates hub/crop switching, file upload, save |
 | `image-cropper` | Zoom, pan, keyboard navigation, crop coordinates |
 
+### Saving a change
+
+`Identity#apply` saves once, so the attachments, source, colour and (for a workspace) name all land or none do. It assigns attachments rather than calling `attach` on the persisted model, which would save midway. Switching away from the upload source purges both attachments permanently, and only after that save succeeds. Blank values count as absent, except a workspace `name`: a submitted blank rename fails validation instead of being ignored.
+
 ## User Avatars
 
 **Sources:** upload, gravatar, initials
@@ -41,7 +45,7 @@ Two Active Storage attachments per user:
 
 Crop coordinates are stored in the `avatar_original` blob's metadata so the crop can be restored when re-editing.
 
-When switching away from the upload source, both attachments are purged to save storage.
+When switching away from the upload source, both attachments are purged to save storage, after the save succeeds: a failed save keeps both.
 
 ### Accepted Formats
 

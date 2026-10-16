@@ -71,6 +71,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Fixed
 
+- Removing an avatar or workspace logo, or switching it away from an upload, purges the two image files only after the save succeeds; a failed save (an invalid stored colour, say) used to delete both files and still report the old upload source.
 - The getting-started guide and `lefthook.yml` no longer advise skipping the hooks: a failing check is run on its own and fixed, since CI repeats every check anyway. `lefthook.yml` drops seven `skip_empty` settings that lefthook 2 ignores, so `lefthook validate` passes.
 - The README and the getting-started gate tables describe the pre-push hook's eight checks and when the image build runs; the workspaces guide names the Profile and logo routes instead of a `/branding` route that no longer exists.
 - **Remove photo on a workspace's logo removes the logo, not the workspace.** It sent `DELETE` to the workspace itself, which soft-deleted it; it now targets a logo endpoint that resets the logo to initials (#1402, #1412).

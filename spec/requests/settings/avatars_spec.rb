@@ -362,9 +362,7 @@ RSpec.describe "Account Avatars", type: :request do
         expect(response.media_type).to eq("text/vnd.turbo-stream.html")
         expect(response.body).to include("toast-cards")
         user.reload
-        # Purge precedes the failed save (design-documented parity): blobs are
-        # gone but the source column keeps its old value.
-        expect(user.avatar).not_to be_attached
+        expect(user.avatar).to be_attached
         expect(user.avatar_source).to eq("upload")
       end
     end

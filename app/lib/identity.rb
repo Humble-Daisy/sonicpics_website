@@ -62,12 +62,8 @@ class Identity
     available_sources.include?(requested) ? requested : source
   end
 
-  # Applies an identity change and saves ONCE, atomically: attachments,
-  # source, color (and name, workspace side) all land or none do — never
-  # `attach` on the persisted model (that auto-saves midway; see design spec).
-  # IRREVERSIBLY PURGES both attachments when the resulting source is not
-  # "upload". Blank values are treated as absent, except `name` (nil-is-absent
-  # — a submitted blank rename must fail validation, not be ignored).
+  # One save: everything lands or nothing does. Leaving "upload" IRREVERSIBLY purges both
+  # attachments, only after that save succeeds. See /docs/developer/identity-system (Saving a change).
   def apply(image: nil, image_original: nil, crop_coordinates: nil, source: nil, color: nil, name: nil)
     incoming_image = image.presence
     incoming_original = image_original.presence
@@ -79,7 +75,7 @@ class Identity
       return failure
     end
 
-    # Ahead of any assignment/purge below: a misuse (e.g. User#identity.apply
+    # Ahead of any assignment below: a misuse (e.g. User#identity.apply
     # with a name:) must raise before side effects, not after purging blobs.
     write_name(name) unless name.nil?
 
@@ -90,14 +86,14 @@ class Identity
     assign_image_original(incoming_original) if incoming_original
     apply_crop_metadata(incoming_crop) if incoming_crop
 
-    if incoming_source && incoming_image.nil?
-      write_source(incoming_source)
-      purge_images if incoming_source != "upload"
-    end
+    switching_source = incoming_source && incoming_image.nil?
+    write_source(incoming_source) if switching_source
 
     model.primary_color = incoming_color.to_i if incoming_color
 
-    save_result
+    result = save_result
+    purge_images if result.success? && switching_source && incoming_source != "upload"
+    result
   end
 
   private

@@ -94,6 +94,21 @@ RSpec.describe "Identity#apply" do
         expect(user.avatar_source).to eq("initials")
       end
 
+      it "keeps both attachments and their files when the save fails" do
+        user = create(:user, :with_avatar)
+        user.update_columns(primary_color: 999)
+        keys = [ user.avatar.blob.key, user.avatar_original.blob.key ]
+
+        result = user.identity.apply(source: "initials")
+
+        expect(result).not_to be_success
+        user.reload
+        expect(user.avatar).to be_attached
+        expect(user.avatar_original).to be_attached
+        expect(user.avatar_source).to eq("upload")
+        expect(keys.map { |key| ActiveStorage::Blob.service.exist?(key) }).to eq([ true, true ])
+      end
+
       it "does not purge when switching TO upload" do
         user = create(:user, :with_avatar)
         result = user.identity.apply(source: "upload")

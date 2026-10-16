@@ -86,6 +86,10 @@ RSpec.describe "Workspace Logo", type: :request do
         expect(response.media_type).to eq("text/vnd.turbo-stream.html")
         expect(response.body).to include("Primary color is not included in the list")
         expect(workspace.reload.discarded_at).to be_nil
+        expect(workspace.logo).to be_attached
+        expect(workspace.logo_original).to be_attached
+        expect([ workspace.logo.blob.key, workspace.logo_original.blob.key ].map { |key| ActiveStorage::Blob.service.exist?(key) })
+          .to eq([ true, true ])
       end
 
       it "tells an HTML request why the save failed" do
