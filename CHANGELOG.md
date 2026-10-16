@@ -71,6 +71,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Fixed
 
+- A password lock emails the holder (`NotificationMailer#password_locked`), as the security guide promised: `PasswordLockedNotifier` declared no email delivery, and security notifications never reach the digest, so a signed-out holder learned nothing. The notifications guide lists the notifier once, not twice.
 - `bin/rails action_text:clear_filename_alts` reloads each rich text under its write lock before cleaning it, so an edit saved while the task runs is no longer overwritten by the copy the task loaded earlier.
 - Removing an avatar or workspace logo, or switching it away from an upload, purges the two image files only after the save succeeds; a failed save (an invalid stored colour, say) used to delete both files and still report the old upload source.
 - The getting-started guide and `lefthook.yml` no longer advise skipping the hooks: a failing check is run on its own and fixed, since CI repeats every check anyway. `lefthook.yml` drops seven `skip_empty` settings that lefthook 2 ignores, so `lefthook validate` passes.

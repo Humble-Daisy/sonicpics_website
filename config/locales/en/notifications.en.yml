@@ -203,6 +203,12 @@ en:
       greeting: "Hi %{name},"
       body: "%{workspace_name} is using %{current} of %{limit} %{metric}. To avoid hitting the cap, consider upgrading your plan or reviewing existing %{metric}."
       action: "Manage %{workspace} settings"
+    password_locked:
+      subject: "Password sign-in to your account is paused"
+      heading: "Password sign-in is paused"
+      greeting: "Hi %{name},"
+      body: "Too many wrong passwords were entered for your account, so password sign-in is paused for %{duration}. You can still sign in with an emailed link or a passkey. If this wasn’t you, someone may be guessing your password."
+      action: "Sign in"
     sign_in_from_new_device:
       subject: "New sign-in from %{os}"
       heading: "New sign-in to your account"
