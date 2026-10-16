@@ -61,6 +61,17 @@ The largest member is `spec/code_smells/template_invariants_spec.rb`. ModelRails
 
 One of those is worth understanding when a CI change makes it fire: the container vulnerability scan must **never** reuse the Docker layer cache (#536). GitHub Actions cache scoping makes a branch read its *own* cache scope first, so a PR replays its own stale apt layer and never sees the fix main already picked up — stale-package CVE findings then look identical to real ones. Rebuilding costs about 45 seconds per run, which is cheap for a red that always means what it says.
 
+### Destroy requests name their target
+
+`spec/code_smells/destroy_requests_name_their_target_spec.rb` exists because of #1402. The identity picker's **Remove photo** button sent `DELETE` to whatever URL it was given, a workspace passed the URL where its logo *saves*, and that URL's DELETE was `workspaces#destroy`. One click discarded the workspace. Nothing about the partial looked wrong on its own; the bad value arrived one partial up, as an ordinary route helper.
+
+So the guard reads every request a template can make (`button_to`, `link_to`, `form_with`, `form_tag`, under `app/views` and `app/components`) and, when the URL or the method is one of the template's declared locals, follows it to every `render` that passes it in, then up again until it reaches the template that names a real route helper. Each DELETE that comes out of that walk is checked against the route table:
+
+- it must land on a named route that actually has a DELETE action;
+- if that action soft-deletes (its controller's `destroy` calls `discard!`, a set derived from the controllers rather than listed by hand), the walk must pass through `shared/confirm_dialog`.
+
+When it fires, the message names the whole render chain, outermost template first, so the place to look is usually the first template in it: that is where the URL was chosen. Point the control at the child resource it names, or put the destroy behind the confirm dialog. The guard reads template text, so it has blind spots, and it prints them whenever a rule fails: collection renders (`render partial:`), URLs built in Ruby, hand-written HTML method overrides, and partials nothing renders. Its negative control replays #1402 on the Profile page and must keep failing.
+
 ### The two i18n gates
 
 Two complementary gates cover missing translations, and it is worth being precise about which covers what:

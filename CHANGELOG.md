@@ -6,6 +6,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Added
 
+- A code-smell spec follows every DELETE in the templates through the partials that pass its URL, and fails when one lands on a route with no destroy, or discards a record without going through the confirm dialog — so a control can no longer point Remove at a parent record's destroy (#1402).
 - The Herb check also covers the 289 Lookbook previews, the Turbo Stream templates (compiled through Herb although Rails still uses Erubi for that format) and the static pages in `public/`, each with a floor.
 - A code-smell spec compiles every HTML+ERB template through Herb on every pull request, so a mismatched tag or ERB output in attribute position fails the suite; the one gem template that fails today (#1341) is a reviewed exception the spec drops once it compiles.
 - `bin/rails action_text:clear_filename_alts` (with `DRY_RUN=1`) removes the file-name alt text Lexxy 0.9 wrote on uploaded images, so they open the ALT dialog empty; run it once on a deployment with pre-1.0 content. Lexxy's attachment toolbar and ALT-dialog buttons meet the 44px target floor, held by an AAA system spec. (#1339)
@@ -25,10 +26,10 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Changed
 
-- Bullet 8.3.0 supports Active Record 8.2, so it loads like any other gem and the Rails-main load shim is gone (#1337).
-- Dependabot groups gem updates into one weekly pull request, as it already does for actions, so a week's bumps cost forks one CI run instead of one per gem.
-- CI's shard count and in-shard worker count come from the `CI_SHARDS` and `CI_WORKERS` repository variables (default 8 and 4), so a fork on a smaller or billed runner sets its own shape in Actions settings instead of editing the workflow.
-- The production image build is its own workflow: a pull request runs it only when a build input changes (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`) and every push to `main` runs it unfiltered; the pre-push hook runs the same build locally through `bin/docker-build-check` on the same inputs.
+- Bullet 8.3.0 supports Active Record 8.2, so it loads like any other gem and the Rails-main load shim is gone (#1337, #1409).
+- Dependabot groups gem updates into one weekly pull request, as it already does for actions, so a week's bumps cost forks one CI run instead of one per gem (#1406).
+- CI's shard count and in-shard worker count come from the `CI_SHARDS` and `CI_WORKERS` repository variables (default 8 and 4), so a fork on a smaller or billed runner sets its own shape in Actions settings instead of editing the workflow (#1407).
+- The production image build is its own workflow: a pull request runs it only when a build input changes (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`) and every push to `main` runs it unfiltered; the pre-push hook runs the same build locally through `bin/docker-build-check` on the same inputs (#1405).
 - The timezone beacon renders only while a user's timezone is unset, so a Turbo visit no longer sends a PATCH; the passkey, identity-picker and beacon requests stop attaching an authenticity token that header-only CSRF never reads (#1351).
 - The sidebar spec moves the pointer off the rail before it checks the tooltip bubble is hidden, so a pointer left over the rail by an earlier spec can no longer hover the bubble in and fail it.
 - The identity picker specs wait for the hub to render, not only to load, so a late render can no longer save the default hue in place of the dragged one (#1344).
@@ -69,8 +70,8 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Fixed
 
-- **Remove photo on a workspace's logo removes the logo, not the workspace.** It sent `DELETE` to the workspace itself, which soft-deleted it; it now targets a logo endpoint that resets the logo to initials (#1402).
-- `bin/parallel-rspec` reloads the schema and seeds every worker database before the suite, so a pre-push run starts from the same global roles CI does instead of an empty table; CI's shards no longer prepare databases in a separate step.
+- **Remove photo on a workspace's logo removes the logo, not the workspace.** It sent `DELETE` to the workspace itself, which soft-deleted it; it now targets a logo endpoint that resets the logo to initials (#1402, #1412).
+- `bin/parallel-rspec` reloads the schema and seeds every worker database before the suite, so a pre-push run starts from the same global roles CI does instead of an empty table; CI's shards no longer prepare databases in a separate step (#1401).
 - Under Reduce Motion the sidebar no longer animates its width when it collapses (its labels still fade), and the rich-text editor's block caret stops blinking; the motion guard now reads `transition-[…]` lists (#1350).
 - A mail send that could not reach the SMTP server (connect timeout, refused connection, busy reply) retries for about seven minutes instead of losing the sign-in link, and `bin/deploy-guide` names the SMTP settings (#1349).
 - The rich-text editor takes a workspace's interactive colour (links, selection, the ALT dialog's Save) instead of the default brand blue, and the ALT dialog has a visible edge in dark mode with an outlined Cancel (#1348).
@@ -364,7 +365,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Security
 
-- Thruster 0.1.27; the image scan's accepted Go findings move to the three DoS CVEs in its go1.27.1 build (no fixed release exists), and the eight go1.26-era entries are retired.
+- Thruster 0.1.27; the image scan's accepted Go findings move to the three DoS CVEs in its go1.27.1 build (no fixed release exists), and the eight go1.26-era entries are retired (#1410).
 - **Blocking an inviter needs the signed link from the invitee's own invitation email** ([#951](https://github.com/dschmura/modelrails_base/issues/951)). Every invitation email gains a "Don't invite me again" link (signed, seven-day, query-string token) that opens a confirmation page; its button declines and blocks and states the outcome on the page. The decline page's block dialog and the bearer `POST /invitations/:token/block` route are gone, so nobody holding only the invitation URL can block. The inviter still never learns a block exists. `Invitation` also lost its delivery-suppression cluster to `Invitation::Suppression` (the split #915 asked for). Fork owners: templates that rendered the old dialog show the hint instead; anything linking to the removed route needs the email link.
 - **Workspace join links now expire seven days after creation or rotation.** Rotation also revokes an expired-but-unrevoked link, closing a `RecordNotUnique` on rotate. Fork note: every existing link expires one week after this migration runs unless rotated first — rotate from workspace settings ([#952](https://github.com/dschmura/modelrails_base/issues/952)).
 - **The app's cookies are classified once, next to Biscuit's consent categories.** `session_id`, Rails' own session cookie, `biscuit_consent`, `theme`, and `sidebar_collapsed` are all `necessary` and need no consent gate; a spec ties the classification to the security doc so a new cookie can't land in only one of the two ([#714](https://github.com/dschmura/modelrails_base/issues/714)).
