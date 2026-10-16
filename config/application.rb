@@ -17,7 +17,6 @@ require "action_cable/engine"
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
-require_relative "bullet_on_rails_main" if Rails.env.local?
 
 module ModelrailsBase
   class Application < Rails::Application

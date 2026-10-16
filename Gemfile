@@ -80,8 +80,8 @@ group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
-  # N+1 query detection; loaded by config/bullet_on_rails_main.rb until Bullet supports 8.2 (#1337).
-  gem "bullet", require: false
+  # N+1 query detection
+  gem "bullet"
 
   # Audits gems for known security defects (use config/bundler-audit.yml to ignore issues)
   gem "bundler-audit", require: false
