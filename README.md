@@ -14,7 +14,7 @@ A multi-tenant SaaS starter kit built on Rails 8.1.
 - **Docs:** Markdowndocs engine at `/docs` (deployment, background jobs, getting started, architecture, security, …)
 - **Testing:** RSpec, FactoryBot, Capybara, Cuprite (pure-Ruby CDP), axe-core (WCAG 2.2 AAA), Bullet (N+1 detection)
 - **Security:** Rate limiting, security headers, CSP, Pwned password check
-- **Deployment:** Kamal → GitHub Container Registry; CI verifies the production image builds on every PR
+- **Deployment:** Kamal → GitHub Container Registry; the production image build is checked on pull requests that change a build input, on every push to `main`, and by the pre-push hook
 - **Version Management:** [mise](https://mise.jdx.dev/) (see `.tool-versions`; `Gemfile` reads from it so Bundler enforces the Ruby version everywhere)
 - **Dev Container:** Optional VS Code Dev Container ships with `ruby:4.0.7-slim` base (matches production), `docker-outside-of-docker` for in-container `kamal deploy`, named bundle cache volume
 

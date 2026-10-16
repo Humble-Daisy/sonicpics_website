@@ -224,14 +224,18 @@ The project uses a two-gate CI pipeline:
 
 ### Gate 1: Local (Lefthook pre-push)
 
-Runs automatically when you `git push`. No setup needed beyond `bundle exec lefthook install` (runs once after clone).
+Runs automatically when you `git push`. No setup needed beyond `bundle exec lefthook install` (runs once after clone). The checks run one at a time, in this order, and the first failure stops the push:
 
 | Check | Tool |
 |-------|------|
+| Stylesheet | `tailwindcss:build`, first, so system specs never read a half-written stylesheet |
 | Security scan | Brakeman |
-| Full test suite | RSpec (full suite) |
-| Accessibility audit | axe-core WCAG 2.2 AAA on every system spec |
+| Gem CVEs | bundler-audit, against the same vendored advisory database CI uses |
 | Code style | RuboCop |
+| ERB templates | erb_lint |
+| Markdown | `mdl` |
+| Full test suite | `bin/parallel-rspec`, including the axe-core WCAG 2.2 AAA audit on every system spec |
+| Production image | `docker build`, last, and only when the branch changes a build input (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`); refuses the push if Docker isn't running |
 
 Pre-commit hooks also auto-fix Ruby style issues on staged files.
 

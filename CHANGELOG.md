@@ -70,6 +70,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Fixed
 
+- The README and the getting-started gate tables describe the pre-push hook's eight checks and when the image build runs; the workspaces guide names the Profile and logo routes instead of a `/branding` route that no longer exists.
 - **Remove photo on a workspace's logo removes the logo, not the workspace.** It sent `DELETE` to the workspace itself, which soft-deleted it; it now targets a logo endpoint that resets the logo to initials (#1402, #1412).
 - `bin/parallel-rspec` reloads the schema and seeds every worker database before the suite, so a pre-push run starts from the same global roles CI does instead of an empty table; CI's shards no longer prepare databases in a separate step (#1401).
 - Under Reduce Motion the sidebar no longer animates its width when it collapses (its labels still fade), and the rich-text editor's block caret stops blinking; the motion guard now reads `transition-[…]` lists (#1350).
