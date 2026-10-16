@@ -1,11 +1,5 @@
-# Lefthook git hooks — skip with LEFTHOOK=0 or --no-verify
-#
-# Pre-push commands set skip_empty: false so the full suite (brakeman, rspec,
-# rubocop) runs on every push, including the first push of a new branch where
-# no remote ref exists yet to compute push_files against. Without this,
-# Lefthook's default skip_empty: true causes "no matching push files" and
-# silently skips the gate — a known mode where prior project PRs bypassed
-# local CI without anyone noticing.
+# Lefthook git hooks: the local half of CI, never skipped — see /docs/developer/getting-started (Gate 1).
+# A push with no changed files to check (a rebase replay) runs none of them but docker_build; CI is the gate then.
 
 pre-commit:
   parallel: true
@@ -28,7 +22,6 @@ pre-push:
   commands:
     tailwind_build:
       tags: assets
-      skip_empty: false
       priority: 1
       run: mise exec -- bin/rails tailwindcss:build
       skip:
@@ -36,7 +29,6 @@ pre-push:
         - rebase
     brakeman:
       tags: security
-      skip_empty: false
       priority: 2
       run: mise exec -- bundle exec brakeman --no-pager -q
       skip:
@@ -50,7 +42,6 @@ pre-push:
       # no network --update), so local and CI verdicts match.
       # scan_js is deliberately not mirrored: it POSTs to the npm registry (#984).
       tags: security
-      skip_empty: false
       priority: 3
       run: mise exec -- bin/bundler-audit
       skip:
@@ -58,7 +49,6 @@ pre-push:
         - rebase
     rubocop:
       tags: style
-      skip_empty: false
       priority: 4
       run: mise exec -- bundle exec rubocop -f simple
       skip:
@@ -70,7 +60,6 @@ pre-push:
       # own Ruby CLI wrapper still delegated to Node under the hood, so it
       # never actually removed the Node dependency it appeared to.
       tags: style
-      skip_empty: false
       priority: 5
       run: mise exec -- bundle exec rake erb:check
       skip:
@@ -83,7 +72,6 @@ pre-push:
       # (see memory: project_ci_lefthook_drift). Markdownlint runs in <1s,
       # so this adds negligible push latency.
       tags: style
-      skip_empty: false
       priority: 6
       run: mise exec -- bundle exec rake markdown:check
       skip:
@@ -91,7 +79,6 @@ pre-push:
         - rebase
     rspec:
       tags: test
-      skip_empty: false
       priority: 7
       env:
         CI: "true"
@@ -104,8 +91,8 @@ pre-push:
         - rebase
     docker_build:
       tags: build
-      # Diffed against main, not the push range: a branch's first push has no
-      # range and would skip the gate. Same inputs as docker_build.yml's paths.
+      # Diffed against main, not the push range, so a rebase replay still builds.
+      # Same inputs as docker_build.yml's paths.
       files: git diff --name-only origin/main...HEAD
       glob: "{Dockerfile,.dockerignore,Gemfile,Gemfile.lock,.tool-versions,bin/docker-entrypoint}"
       run: mise exec -- bin/docker-build-check

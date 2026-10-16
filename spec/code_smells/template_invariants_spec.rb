@@ -486,8 +486,8 @@ RSpec.describe "Template invariants" do
         "expected the pre-push docker_build command to run bin/docker-build-check so a local " \
         "push of a build-input change proves the image builds before CI does"
       expect(command["files"].to_s).to include("origin/main"),
-        "expected `files:` to diff against origin/main — the push range is empty on a branch's " \
-        "first push (lefthook.yml's skip_empty note), which would silently skip the gate"
+        "expected `files:` to diff against origin/main — a rebase replay pushes no changed files, so a " \
+        "push-range filter would skip the image build on exactly the push that re-lands a build change"
       build_inputs.each do |input|
         expect(command["glob"].to_s).to include(input),
           "expected the pre-push glob to name #{input}, the same build inputs the workflow's " \

@@ -239,7 +239,7 @@ Runs automatically when you `git push`. No setup needed beyond `bundle exec left
 
 Pre-commit hooks also auto-fix Ruby style issues on staged files.
 
-Skip hooks in emergencies with `LEFTHOOK=0 git push` or `--no-verify`.
+Don't skip the hooks. When one fails, run that check on its own to see why — each one's command is in `lefthook.yml`, and the suite is `bin/parallel-rspec` — fix it, and push again. `LEFTHOOK=0` and `--no-verify` do turn the hooks off, but they only move the failure: CI runs the same checks on the pull request, and the image build runs again on every push to `main`.
 
 ### Gate 2: GitHub Actions (on push/PR)
 
