@@ -8,27 +8,16 @@
 # Revisit: on the next Ruby 4.0.x patch (bump .tool-versions), or 2026-12-01.
 CVE-2026-33210
 
-# Go stdlib v1.26.5 baked into thruster's precompiled binary (0.1.23 in the
-# lock; 0.1.25, the newest release, verified built on the SAME go1.26.5).
-# One batch of stdlib CVEs, all fixed only in Go 1.26.6+: mostly
-# resource-exhaustion (encoding/xml recursion 56859, net/url quadratic parse
-# 56860, crypto/tls indefinite KeyUpdate 56862, h2c DoS 56853, dnsmessage
-# 46600, 33818) plus html/template XSS (56858) and x/net/idna punycode
-# handling (39821) — the latter two live in packages a static-asset proxy
-# does not exercise for rendering, but reachability is not load-bearing
-# here: no thruster release built on Go >= 1.26.6 exists, so there is no
-# action available to us regardless. (The 0.1.22-era CVE-2026-39822 entry
-# that previously lived here was cleared by the 0.1.23 rebuild on go1.26.5
-# — its Revisit trigger — and removed.)
-# 0.1.26 (2026-09-03, this bump) clears the golang.org/x/crypto critical
-# (CVE-2026-56854) the scan reported on 0.1.25; whether it also moved past
-# go1.26.5 cannot be read from the scan, because ignored findings are not
-# printed. Revisit: on the next thruster release (> 0.1.26), or 2026-10-15.
-CVE-2026-33818
-CVE-2026-39821
-CVE-2026-46600
-CVE-2026-56853
-CVE-2026-56858
-CVE-2026-56859
-CVE-2026-56860
-CVE-2026-56862
+# Go stdlib v1.27.1 and golang.org/x/net v0.59.0 baked into thruster's
+# precompiled binary (0.1.27, the newest release; toolchain read from the
+# published x86_64-linux binary). Three denial-of-service findings, all fixed
+# only in Go 1.27.2 (stdlib) and x/net 0.60.0: crafted-HTTP net/http (78667),
+# net/http/internal/http2 and x/net/http2 (78669), crypto/tls (97031). No
+# thruster release built on the fixed versions exists, so there is no action
+# available to us regardless of reachability. The eight go1.26.5-era entries
+# this block held were cleared by 0.1.27's go1.27.1 build, their Revisit
+# trigger, and removed; the image scan on that change is the proof.
+# Revisit: on the next thruster release (> 0.1.27), or 2026-11-15.
+CVE-2026-78667
+CVE-2026-78669
+CVE-2026-97031
