@@ -183,7 +183,7 @@ RSpec.describe "Code smell: destroy requests name their target" do
   end
 
   it "finds at least as many DELETE requests as it was written against" do
-    expect(found.size).to be >= 33
+    expect(found.size).to be >= 34
   end
 
   it "follows the identity picker's Remove through both partials to the resource it names" do

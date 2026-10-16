@@ -19,6 +19,7 @@ en:
           success: "Resource created."
         show:
           edit: "Edit"
+          delete: "Delete"
           back: "Back to resources"
           created_by: "by %{name}"
         edit:
@@ -29,4 +30,7 @@ en:
         update:
           success: "Resource updated."
         destroy:
-          success: "Resource archived."
+          success: "Resource deleted."
+          title: "Delete this resource for good?"
+          confirm: "This can't be undone. It will be gone from the %{project} for everyone."
+          confirm_action: "Delete forever"
