@@ -1,19 +1,7 @@
 name: JS advisory
 
-# The per-PR scan_js job audits JavaScript advisories only when someone
-# pushes, so an advisory published between commits stays invisible until the
-# next PR happens to touch the tree. This closes that window against main
-# (#1041).
-#
-# Additive, not a relocation: scan_js remains a required ruleset context and
-# is untouched. Both lanes run the same audit command, including the bounded
-# retry and the REGISTRY UNREACHABLE message (#984), so a registry timeout
-# does not read as a vulnerability here either — spec/ci/scan_js_workflow_spec.rb
-# enumerates every workflow carrying the audit and holds all of them to that.
-#
-# NOTE for forks: this repository is public, and GitHub disables scheduled
-# workflows in a public repository after 60 days with no repository activity.
-# A private fork is not subject to that. See /docs/developer/getting-started.
+# Runs ci.yml's static-job importmap audit daily against main, so an advisory published between pushes surfaces
+# (#1041); same retry and wording, held by spec/ci/scan_js_workflow_spec.rb. Public repos: schedules pause after 60 idle days.
 on:
   schedule:
     - cron: "0 6 * * *"

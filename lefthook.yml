@@ -35,12 +35,8 @@ pre-push:
         - merge
         - rebase
     bundler_audit:
-      # CI's scan_ruby job runs brakeman AND bundler-audit, but Lefthook only
-      # ran brakeman — so a fresh transitive-gem CVE (no code change) turned
-      # scan_ruby red on a green-locally branch repeatedly (nokogiri + faraday,
-      # PR #371). Same bin/bundler-audit + config CI uses (vendored advisory DB,
-      # no network --update), so local and CI verdicts match.
-      # scan_js is deliberately not mirrored: it POSTs to the npm registry (#984).
+      # Same bin/bundler-audit and vendored advisory DB as CI's static job, so the verdicts match (#371).
+      # The importmap audit is deliberately not mirrored: it POSTs to the npm registry (#984).
       tags: security
       priority: 3
       run: mise exec -- bin/bundler-audit
@@ -55,10 +51,7 @@ pre-push:
         - merge
         - rebase
     erb_lint:
-      # Matches CI's lint_docs job. Runs erb_lint (Ruby gem, config in
-      # .erb_lint.yml) — replaced the npm @herb-tools/linter package, whose
-      # own Ruby CLI wrapper still delegated to Node under the hood, so it
-      # never actually removed the Node dependency it appeared to.
+      # Matches CI's static job (rake erb:check). erb_lint is a Ruby gem: the npm linter it replaced needed Node.
       tags: style
       priority: 5
       run: mise exec -- bundle exec rake erb:check
@@ -66,11 +59,7 @@ pre-push:
         - merge
         - rebase
     markdown_lint:
-      # Mirrors CI's lint_docs job (`bundle exec rake markdown:check`). Was
-      # absent locally until #193 caught a trailing-space MD009 violation in
-      # workspaces.md — same drift pattern as PR #78's erb_lint miss
-      # (see memory: project_ci_lefthook_drift). Markdownlint runs in <1s,
-      # so this adds negligible push latency.
+      # Mirrors CI's static job (rake markdown:check); missing here until #193 caught CI-only drift.
       tags: style
       priority: 6
       run: mise exec -- bundle exec rake markdown:check

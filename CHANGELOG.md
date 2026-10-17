@@ -70,6 +70,10 @@ All notable changes to ModelRails are documented here, organized by phase.
 - Theme resolution defined once, in the pre-paint script (#624).
 - Operations users page is a paginated index (#1135).
 
+### Breaking
+
+- CI's four static jobs (`scan_ruby`, `scan_js`, `lint`, `lint_docs`) are one `static` job, so a pull request bills one runner minute for them instead of four, and each check still runs after an earlier one fails. A ruleset that required the four names must require `static` instead.
+
 ### Fixed
 
 - A password lock emails the holder (`NotificationMailer#password_locked`), as the security guide promised: `PasswordLockedNotifier` declared no email delivery, and security notifications never reach the digest, so a signed-out holder learned nothing. The notifications guide lists the notifier once, not twice.

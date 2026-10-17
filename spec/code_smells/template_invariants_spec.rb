@@ -592,15 +592,31 @@ RSpec.describe "Template invariants" do
         "get the same gates as CI (drift bit us before — see lefthook.yml's bundler_audit note)"
     end
 
-    it "the comment-block gate runs in Lefthook pre-commit AND in CI's lint job over the PR's diff" do
+    it "the comment-block gate runs in Lefthook pre-commit AND in CI's static job over the PR's diff" do
       hook = lefthook_config.dig("pre-commit", "commands", "comment_blocks", "run").to_s
-      ci_steps = Array(ci_workflow.dig("jobs", "lint", "steps")).map { |s| s["run"].to_s }
+      ci_steps = Array(ci_workflow.dig("jobs", "static", "steps")).map { |s| s["run"].to_s }
 
       expect(hook).to include("bin/comment-block-check"),
         "expected Lefthook pre-commit to run bin/comment-block-check on the staged files"
       expect(ci_steps).to include(match(%r{bin/comment-block-check --range})),
-        "expected CI's lint job to run bin/comment-block-check --range over the pull request's " \
+        "expected CI's static job to run bin/comment-block-check --range over the pull request's " \
         "diff — a skipped hook, or a fork without Lefthook, otherwise lands long comment blocks unchecked"
+    end
+
+    it "runs every static check in one job, and each check even after an earlier one fails" do
+      jobs = ci_workflow.fetch("jobs")
+      checks = %w[brakeman bundler-audit importmap\ audit rubocop markdown:check erb:check comment-block-check]
+      steps = Array(jobs.dig("static", "steps"))
+
+      expect(jobs.keys & %w[scan_ruby scan_js lint lint_docs]).to be_empty,
+        "expected the four static jobs folded into `static` — each billed a full runner minute for seconds of work"
+      checks.each do |check|
+        step = steps.find { |s| s["run"].to_s.include?(check) }
+        expect(step).not_to be_nil, "expected the static job to run #{check}"
+        expect(step["if"].to_s).to include("!cancelled()"),
+          "expected the #{check} step to run even after an earlier check fails (`if: !cancelled()`), " \
+          "so one push reports every failing check, as four separate jobs did"
+      end
     end
   end
 

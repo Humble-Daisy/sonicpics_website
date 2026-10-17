@@ -72,7 +72,7 @@ gem "image_processing", "~> 2.2"
 # require: false skips Bundler.require — Active Storage's image_processing
 # transformer pulls in `vips` lazily on first variant call. active_storage_validations
 # also eager-loads its vips analyzer at Rails boot, so libvips must be installed in
-# every job that boots Rails (test, scan_js, lint_docs).
+# every job that boots Rails (test_shard, static).
 gem "ruby-vips", require: false
 gem "active_storage_validations"
 

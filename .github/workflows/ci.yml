@@ -19,56 +19,11 @@ permissions:
   contents: read
 
 jobs:
-  scan_ruby:
+  # Every static check in one job: one billed runner minute, not four. Each check step runs even after an
+  # earlier one fails, so a push still reports every failing check. /docs/developer/getting-started (Gate 2)
+  static:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1
-        with:
-          bundler-cache: true
-
-      - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
-
-      - name: Scan for known security vulnerabilities in gems used
-        run: bin/bundler-audit
-
-  scan_js:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1
-        with:
-          bundler-cache: true
-
-      - name: Install libvips (loaded at Rails boot via active_storage_validations)
-        timeout-minutes: 5
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libvips42t64
-
-      - name: Scan for security vulnerabilities in JavaScript dependencies
-        run: |
-          for i in 1 2 3; do bin/importmap audit && exit 0; [ "$i" -lt 3 ] && sleep $((i * 20)); done
-          echo "::error::REGISTRY UNREACHABLE after 3 attempts — audit did not run (#984)"; exit 1
-
-  lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       RUBOCOP_CACHE_ROOT: tmp/rubocop
     steps:
@@ -84,6 +39,12 @@ jobs:
         with:
           bundler-cache: true
 
+      - name: Install libvips (loaded at Rails boot via active_storage_validations)
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libvips42t64
+
       - name: Prepare RuboCop cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         env:
@@ -94,40 +55,36 @@ jobs:
           restore-keys: |
             rubocop-${{ runner.os }}-${{ env.DEPENDENCIES_HASH }}-
 
+      - name: Scan for common Rails security vulnerabilities using static analysis
+        if: ${{ !cancelled() }}
+        run: bin/brakeman --no-pager
+
+      - name: Scan for known security vulnerabilities in gems used
+        if: ${{ !cancelled() }}
+        run: bin/bundler-audit
+
+      - name: Scan for security vulnerabilities in JavaScript dependencies
+        if: ${{ !cancelled() }}
+        run: |
+          for i in 1 2 3; do bin/importmap audit && exit 0; [ "$i" -lt 3 ] && sleep $((i * 20)); done
+          echo "::error::REGISTRY UNREACHABLE after 3 attempts — audit did not run (#984)"; exit 1
+
       - name: Lint code for consistent style
+        if: ${{ !cancelled() }}
         run: bin/rubocop -f github
 
       - name: Refuse comment blocks over two lines in the pull request's diff
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         env:
           BASE_REF: ${{ github.base_ref }}
         run: bin/comment-block-check --range "origin/${BASE_REF}...HEAD"
 
-  lint_docs:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1
-        with:
-          bundler-cache: true
-
-      - name: Install libvips (loaded at Rails boot via active_storage_validations)
-        timeout-minutes: 5
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libvips42t64
-
       - name: Check markdown
+        if: ${{ !cancelled() }}
         run: bundle exec rake markdown:check
 
       - name: Check ERB templates
+        if: ${{ !cancelled() }}
         run: bundle exec rake erb:check
 
   # Sharded test matrix (#495, PR #615), shaped by the CI_SHARDS and CI_WORKERS repository
