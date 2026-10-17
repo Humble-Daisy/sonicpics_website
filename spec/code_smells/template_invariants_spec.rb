@@ -467,11 +467,10 @@ RSpec.describe "Template invariants" do
       expect(docker_build_job).not_to be_nil, "expected a `docker_build` job in docker_build.yml"
     end
 
-    it "builds on a pull request only when a build input changes, and on every push to main" do
-      expect(build_triggers.dig("pull_request", "paths"))
-        .to include(*build_inputs, ".github/workflows/docker_build.yml"),
-        "expected pull_request.paths to name every file the Dockerfile's early layers COPY, " \
-        "plus the workflow itself — a PR touching none of them does not pay for a build"
+    it "builds on every push to main, and on a pull request only to test its own workflow" do
+      expect(build_triggers.dig("pull_request", "paths")).to eq([ ".github/workflows/docker_build.yml" ]),
+        "expected docker_build to run on a pull request only when its own workflow changes — a " \
+        "build-input pull request is already built from scratch by image_scan, so a second build bills twice"
       expect(build_triggers.dig("push", "branches")).to include("main"),
         "expected a push trigger on main as the unfiltered backstop"
       expect(build_triggers["push"]).not_to have_key("paths"),
@@ -490,7 +489,7 @@ RSpec.describe "Template invariants" do
         "push-range filter would skip the image build on exactly the push that re-lands a build change"
       build_inputs.each do |input|
         expect(command["glob"].to_s).to include(input),
-          "expected the pre-push glob to name #{input}, the same build inputs the workflow's " \
+          "expected the pre-push glob to name #{input}, the same build inputs image_scan's " \
           "pull_request.paths names — the two lists must stay in sync"
       end
     end
@@ -706,6 +705,26 @@ RSpec.describe "Template invariants" do
       expect(triggers.dig("pull_request", "paths")).to include("Dockerfile"),
         "expected pull_request.paths to include Dockerfile so image-affecting changes " \
         "are scanned pre-merge"
+    end
+
+    it "is the one image build a build-input pull request runs" do
+      inputs = %w[Dockerfile .dockerignore Gemfile Gemfile.lock .tool-versions bin/docker-entrypoint]
+
+      expect(triggers.dig("pull_request", "paths")).to include(*inputs),
+        "expected image_scan's pull_request.paths to name every build input: docker_build no longer " \
+        "runs on pull requests, so this cold build is the pull request's proof that the image builds"
+    end
+
+    it "builds the same image docker_build does" do
+      build_with = lambda do |workflow|
+        steps = YAML.safe_load(File.read(root.join(".github/workflows/#{workflow}")), aliases: true)
+          .fetch("jobs").values.flat_map { |job| job["steps"] }
+        steps.find { |s| s["uses"].to_s.include?("docker/build-push-action") }["with"].slice("context", "file", "target", "platforms")
+      end
+
+      expect(build_with.call("image_scan.yml")).to eq(build_with.call("docker_build.yml")),
+        "expected image_scan and docker_build to build the same image (context, Dockerfile, target, " \
+        "platforms) — image_scan's build stands in for docker_build's on pull requests"
     end
 
     it "loads the built image so the scanner has something to scan" do

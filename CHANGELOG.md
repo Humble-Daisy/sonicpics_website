@@ -27,6 +27,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Changed
 
+- A pull request that changes a build input builds the production image once, in `image_scan`'s cold build, instead of twice; `docker_build` runs on every push to `main` and on pull requests only to test its own workflow.
 - Bullet 8.3.0 supports Active Record 8.2, so it loads like any other gem and the Rails-main load shim is gone (#1337, #1409).
 - Dependabot groups gem updates into one weekly pull request, as it already does for actions, so a week's bumps cost forks one CI run instead of one per gem (#1406).
 - CI's shard count and in-shard worker count come from the `CI_SHARDS` and `CI_WORKERS` repository variables (default 8 and 4), so a fork on a smaller or billed runner sets its own shape in Actions settings instead of editing the workflow (#1407).

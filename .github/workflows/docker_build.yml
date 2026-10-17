@@ -1,16 +1,10 @@
 name: Docker build
 
-# Proves the production image builds. A pull request pays for it only when a
-# build input changes; every push to main runs it unfiltered. /docs/developer/deployment
+# Proves the production image builds on every push to main. A build-input pull request gets that proof from
+# image_scan's cold build, so a pull request runs this only to test this file. /docs/developer/deployment
 on:
   pull_request:
     paths:
-      - "Dockerfile"
-      - ".dockerignore"
-      - "Gemfile"
-      - "Gemfile.lock"
-      - ".tool-versions"
-      - "bin/docker-entrypoint"
       - ".github/workflows/docker_build.yml"
   push:
     branches: [ main ]

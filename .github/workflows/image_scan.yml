@@ -1,23 +1,7 @@
 name: Image Scan
 
-# Scans the production image for OS-package CVEs (glibc, openssl, sqlite3,
-# libvips in the ruby:slim base) — the layer brakeman (app code) and
-# bundler-audit (gem deps) cannot see.
-#
-# Policy: runs on image-affecting PRs plus a weekly schedule, rather than on
-# every PR. New base-image CVEs appear without any code change; gating every
-# PR on them would red-flag unrelated green branches (the same drift mode as
-# the 2026-06-09 bundler-audit oauth2 CVE on a no-change branch). The weekly
-# run surfaces those independently of development activity.
-#
-# In practice the path filter is broader than it reads: Gemfile.lock is on it
-# and dependabot bumps it constantly, so this fires on roughly 70% of PRs
-# (51 of 72 over the two weeks to 2026-08-04). That is worth knowing before
-# adding per-run cost here.
-#
-# Exceptions: to accept a finding temporarily, add the CVE ID to a
-# .trivyignore file at the repo root with a comment explaining why and a
-# revisit date. Trivy picks the file up automatically.
+# Builds the production image from scratch and scans its OS packages; it is also a build-input PR's image build.
+# Weekly too, because base-image CVEs land without a commit. Accepted findings: .trivyignore. /docs/developer/testing
 
 on:
   schedule:
@@ -26,7 +10,10 @@ on:
     paths:
       - "Dockerfile"
       - ".dockerignore"
+      - "Gemfile"
       - "Gemfile.lock"
+      - ".tool-versions"
+      - "bin/docker-entrypoint"
       - ".trivyignore"
       - ".github/workflows/image_scan.yml"
   workflow_dispatch:
@@ -50,33 +37,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
-      # ALWAYS a cold build — never the layer cache, on any trigger (#536).
-      #
-      # This was cached on PRs, with a documented remedy: dispatch the workflow
-      # on main to refresh the shared cache so later PR scans replay patched
-      # layers. That remedy does not work. GitHub Actions cache scoping makes a
-      # branch read its OWN scope before falling back to the default branch, and
-      # ci.yml's docker_build runs on every PR writing `mode=max` into exactly
-      # that scope. An affected PR therefore replays its own stale apt layer and
-      # main's refreshed one is never consulted.
-      #
-      # Observed 2026-07-30: four dependabot PRs reported 5 HIGH CVEs in
-      # libexpat1 that Debian had already fixed. Refreshing main changed
-      # nothing; each branch needed its own dispatch. The failure is
-      # indistinguishable from a real finding, which is the property a security
-      # gate can least afford.
-      #
-      # Keying the cache on the base-image digest would not have helped:
-      # ruby:slim rebuilds on Debian point releases, not interim security
-      # updates (see the Dockerfile's apt-get upgrade comment), so the digest is
-      # unchanged precisely when the packages inside it are not.
-      #
-      # Cost, measured over this workflow's own run history: ~3.8 min cold
-      # against ~3.1 min cached. About 45 seconds, because most of the job is
-      # Trivy rather than layer building.
-      #
-      # load: true exports the image into the local Docker daemon — without it
-      # the image exists only in the build cache and Trivy has nothing to scan.
+      # Always cold: a cached build can replay a stale apt layer and fake a CVE (#536, /docs/developer/testing).
+      # load: true puts the image in the local daemon, so Trivy has something to scan.
       - name: Build production image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
