@@ -7,7 +7,9 @@ RSpec.describe "Code smell: destroy requests name their target" do
     "`render partial: ...` collection renders: their locals are not followed (the tree's four pass records, not URLs).",
     "A URL built in Ruby (a helper method, a component's .rb class) rather than written in a template.",
     "A hand-written <form> or <a> that spells the DELETE override in raw HTML instead of a helper option.",
-    "A partial nothing renders: a DELETE whose URL is one of its locals resolves to no caller, so no site."
+    "A partial nothing renders: a DELETE whose URL is one of its locals resolves to no caller, so no site.",
+    "A destroy that changes a record it did not load with `find`/`find_by` (a before_action's record): only a direct " \
+      "`.discard!` is seen, and a model's verbs defined in a concern are not followed."
   ]
 
   # Top-level commas only: a nested call, hash, array or string keeps its commas.
@@ -81,7 +83,7 @@ RSpec.describe "Code smell: destroy requests name their target" do
     end
     method = args[:kwargs]["method"] ||
              args[:kwargs].values_at("data", "form").join(" ")[/turbo_method:\s*([^,}\s]+)/, 1]
-    { helper: helper, url: url, method: method }
+    { helper: helper, url: url, method: method, confirmed: code.match?(/\bturbo_confirm:/) }
   end
 
   route_name = lambda do |expr|
@@ -128,7 +130,7 @@ RSpec.describe "Code smell: destroy requests name their target" do
 
     sources.flat_map do |path, source|
       erb_tags.call(source).filter_map { |code| request_call.call(code) }.flat_map do |call|
-        resolve.call(call[:url], call[:method], path, [ path ]).map { |entry| entry.merge(helper: call[:helper]) }
+        resolve.call(call[:url], call[:method], path, [ path ]).map { |entry| entry.merge(call.slice(:helper, :confirmed)) }
       end
     end
   end
@@ -137,10 +139,46 @@ RSpec.describe "Code smell: destroy requests name their target" do
     entries.select { |entry| entry[:method].to_s.match?(/\A(:delete|["']delete["'])\z/) || entry[:method].to_s.match?(/\A[a-z_]+\z/) }
   end
 
+  nodes = lambda do |root|
+    Enumerator.new do |out|
+      stack = [ root ]
+      while (node = stack.pop)
+        out << node
+        stack.concat(node.compact_child_nodes)
+      end
+    end
+  end
+
+  discarding_verbs = lambda do |model|
+    calls = nodes.call(Prism.parse_file(Object.const_source_location(model.name).first).value)
+      .grep(Prism::DefNode).to_h { |definition| [ definition.name, nodes.call(definition).grep(Prism::CallNode).map(&:name).to_set ] }
+    verbs = Set[:discard!]
+    loop do
+      grown = verbs | calls.select { |_name, called| called.intersect?(verbs) }.keys
+      break verbs if grown == verbs
+
+      verbs = grown
+    end
+  end
+
+  loaded_models = lambda do |destroy|
+    Rails.application.eager_load!
+    names = nodes.call(destroy).grep(Prism::CallNode).select { |call| %i[find find_by find_by!].include?(call.name) }.flat_map do |call|
+      Enumerator.produce(call.receiver) { |link| link.respond_to?(:receiver) ? link.receiver : raise(StopIteration) }
+        .take_while(&:itself).map { |link| link.is_a?(Prism::CallNode) ? link.name.to_s : link.slice }
+    end
+    names.flat_map do |name|
+      [ name.safe_constantize ] + ApplicationRecord.descendants.filter_map { |model| model.reflect_on_association(name)&.klass rescue nil }
+    end.select { |model| model.is_a?(Class) && model < ApplicationRecord }.uniq
+  end
+
   soft_deleting = lambda do
     Dir[Rails.root.join("app/controllers/**/*_controller.rb")].filter_map do |file|
-      body = File.read(file)[/def destroy\b(.*?)(?=^\s*def |\z)/m, 1]
-      next unless body&.include?(".discard!")
+      destroy = nodes.call(Prism.parse_file(file).value).find { |node| node.is_a?(Prism::DefNode) && node.name == :destroy }
+      next unless destroy
+
+      verbs = loaded_models.call(destroy).map { |model| discarding_verbs.call(model) }.reduce(Set[:discard!], :|)
+      next unless nodes.call(destroy).grep(Prism::CallNode).map(&:name).intersect?(verbs.to_a)
 
       "#{file.delete_prefix("#{Rails.root}/app/controllers/").delete_suffix("_controller.rb")}#destroy"
     end
@@ -169,16 +207,22 @@ RSpec.describe "Code smell: destroy requests name their target" do
       "blind spots:\n  - #{unwalked.join("\n  - ")}"
   end
 
-  it "sends a DELETE that discards a record only from a confirm dialog" do
-    unconfirmed = found.select do |entry|
+  unconfirmed_discards = lambda do |entries, discarding_actions|
+    entries.select do |entry|
       name = route_name.call(entry[:url])
-      name && discarding.include?(delete_action.call(name)) && entry[:chain].exclude?("app/views/shared/_confirm_dialog.html.erb")
+      name && discarding_actions.include?(delete_action.call(name)) && !entry[:confirmed] &&
+        entry[:chain].exclude?("app/views/shared/_confirm_dialog.html.erb")
     end
+  end
+
+  it "sends a DELETE that discards a record only after a confirmation" do
+    unconfirmed = unconfirmed_discards.call(found, discarding)
 
     expect(unconfirmed.map { |entry| "#{site.call(entry)} -> #{delete_action.call(route_name.call(entry[:url]))}" }).to be_empty,
       "These DELETE requests discard a record without a confirm dialog — the shape of #1402, where Remove photo " \
       "discarded the workspace:\n  #{unconfirmed.map { |entry| site.call(entry) }.join("\n  ")}\n" \
-      "fix: point the control at the child resource it names, or render shared/confirm_dialog for the destroy.\n" \
+      "fix: point the control at the child resource it names, or confirm the destroy with shared/confirm_dialog " \
+      "(or turbo_confirm).\n" \
       "rule: /docs/developer/identity-system (Removing an Image)\nblind spots:\n  - #{unwalked.join("\n  - ")}"
   end
 
@@ -202,8 +246,21 @@ RSpec.describe "Code smell: destroy requests name their target" do
       .to eq([ %w[app/views/workspaces/settings/_danger_zone_section.html.erb app/views/shared/_confirm_dialog.html.erb] ])
   end
 
-  it "derives the discarding destroys from the controllers" do
-    expect(discarding).to include("workspaces#destroy", "workspaces/projects#destroy")
+  it "derives the discarding destroys from the controllers and the models they load" do
+    expect(discarding).to include("workspaces#destroy", "workspaces/projects#destroy",
+                                  "workspaces/members#destroy", "operations/operatorships#destroy")
+    expect(discarding).not_to include("workspaces/invitations#destroy", "workspaces/join_links#destroy"),
+      "Invitation#revoke! and WorkspaceJoinLink#revoke! only change a status; sharing Operatorship#revoke!'s name " \
+      "must not make them discards"
+  end
+
+  it "catches a Leave button that loses its turbo_confirm" do
+    leave = "app/views/workspaces/_leave_button.html.erb"
+    planted = sources.merge(leave => sources.fetch(leave).sub(/^\s*data: \{ turbo_confirm: .*\n/, ""))
+    expect(planted.fetch(leave)).not_to eq(sources.fetch(leave)), "the injection point moved; the simulation proves nothing"
+
+    expect(unconfirmed_discards.call(deletes.call(census.call(planted)), discarding).map { |entry| entry[:chain].first })
+      .to include(leave)
   end
 
   it "catches #1402: Remove photo on the Profile page pointed at the workspace" do

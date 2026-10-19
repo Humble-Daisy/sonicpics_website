@@ -79,13 +79,12 @@ RSpec.describe "Code smell: forms inside Turbo frames" do
 
   view_root = Rails.root.join("app/views")
 
-  # --- the analyser -------------------------------------------------------
-  # An ERB tag's code, minus the delimiters. `<%#` comments are dropped
-  # wholesale: prose is allowed to contain the words "do" and "end".
+  # An ERB tag's code without its comments (`<%#` tags and Ruby `#` lines), so prose can say "do" or
+  # "button_to" without reading as code.
   erb_tags = lambda do |source|
     source.to_enum(:scan, /<%(?!#)(=|-|)?(.*?)-?%>/m).map do
       match = Regexp.last_match
-      { code: match[2].strip, offset: match.begin(0) }
+      { code: match[2].lines.grep_v(/\A\s*#/).join.strip, offset: match.begin(0) }
     end
   end
 
@@ -220,6 +219,19 @@ RSpec.describe "Code smell: forms inside Turbo frames" do
       "app/views/workspaces/members/_invitation_row.html.erb button_to workspace_invitation_resend_path",
       "app/views/workspaces/members/_invitation_row.html.erb button_to workspace_invitation_path"
     )
+  end
+
+  it "reads a Ruby comment inside a code tag as prose, not a form" do
+    source = <<~ERB
+      <%= turbo_frame_tag "results" do %>
+        <%
+          # the confirm button_to renders its own form
+          label = "Go"
+        %>
+      <% end %>
+    ERB
+
+    expect(classify.call(source, "app/views/example.html.erb", false)[:bare]).to be_empty
   end
 
   it "sees the members search form deliberately targeting its own frame" do

@@ -131,6 +131,13 @@ en:
           resend_aria: "Resend invitation to %{email}"
           revoke: "Revoke"
           revoke_aria: "Revoke invitation to %{email}"
+      deactivate_dialog:
+        title: "Deactivate %{name}?"
+        message: "%{name} loses access to %{workspace_name} right away and is removed from all of its %{projects}. Reactivating restores their access, not their %{projects}."
+        action: "Deactivate"
+        leave_title: "Leave %{workspace_name}?"
+        leave_message: "You lose access to %{workspace_name} right away and are removed from all of its %{projects}."
+        leave_action: "Leave"
       edit:
         title: "Change role"
         role_label: "Role"

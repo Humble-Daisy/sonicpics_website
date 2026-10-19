@@ -27,20 +27,25 @@
             class: "text-sm text-interactive hover:text-interactive-hover
                     inline-flex min-h-input items-center focus-ring rounded" %>
     <% end %>
-    <%# #1050: these three post from inside the members_results frame and all
-        answer with a redirect carrying a flash, which the layout renders
-        OUTSIDE the frame — so Turbo would fetch the notice and throw it away.
-        `_top` targets the whole page, the same escape the magic-link generate
-        form on index.html.erb already takes. Deactivate cannot be a
-        row-replacing stream instead: leaving and the last-owner refusal
-        redirect to a different page entirely. %>
+    <%# These post from inside the members_results frame and redirect with a flash, so each targets `_top` (#1050);
+        Deactivate's confirm dialog does it for its own button. %>
     <% if policy(membership).destroy? && !membership.discarded? %>
-      <%= button_to t("workspaces.members.index.deactivate"),
-            workspace_member_path(workspace, membership),
-            method: :delete,
-            form: { data: { turbo_frame: "_top" } },
-            aria: { label: t("workspaces.members.index.deactivate_aria", name: membership.user.full_name) },
-            class: "btn-touch-target btn-text btn-text-danger text-sm" %>
+      <% leaving = membership.user == Current.user %>
+      <div data-controller="modal" class="inline">
+        <button type="button" data-action="click->modal#open"
+                aria-label="<%= t("workspaces.members.index.deactivate_aria", name: membership.user.full_name) %>"
+                class="btn-touch-target btn-text btn-text-danger text-sm">
+          <%= t("workspaces.members.index.deactivate") %>
+        </button>
+        <%= render "shared/confirm_dialog",
+              id: dom_id(membership, :deactivate),
+              title: leaving ? t("workspaces.members.deactivate_dialog.leave_title", workspace_name: workspace.name) :
+                               t("workspaces.members.deactivate_dialog.title", name: membership.user.full_name),
+              message: leaving ? t("workspaces.members.deactivate_dialog.leave_message", workspace_name: workspace.name) :
+                                 t("workspaces.members.deactivate_dialog.message", name: membership.user.full_name, workspace_name: workspace.name),
+              confirm_text: leaving ? t("workspaces.members.deactivate_dialog.leave_action") : t("workspaces.members.deactivate_dialog.action"),
+              confirm_url: workspace_member_path(workspace, membership) %>
+      </div>
     <% end %>
     <% if policy(membership).reactivate? && membership.discarded? %>
       <%= button_to t("workspaces.members.index.reactivate"),

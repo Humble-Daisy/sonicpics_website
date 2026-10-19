@@ -58,7 +58,7 @@ Pick from the roles you're able to assign. You can only grant a role whose permi
 
 ### Deactivating a Member
 
-Deactivation is a **soft operation** — the membership is discarded (not destroyed), and the user is removed from all projects in that workspace. The last owner cannot be deactivated. Reactivating a member follows the same rule as changing a role: you can only restore a member to a role you could assign.
+Deactivation is a **soft operation** — the membership is discarded (not destroyed), and the user is removed from all projects in that workspace. **Deactivate** asks you to confirm first, and the dialog says what the member loses. The last owner cannot be deactivated. Reactivating a member follows the same rule as changing a role: you can only restore a member to a role you could assign.
 
 ### Reactivating a Member
 

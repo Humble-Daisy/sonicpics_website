@@ -27,6 +27,8 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Changed
 
+- A member's **Deactivate** asks for confirmation and says what they lose: workspace access now, and their project memberships, which Reactivate does not restore.
+- The destroy-target guard counts a destroy that discards through a model method (`Membership#deactivate!`) and accepts `turbo_confirm` as the confirmation.
 - CI's `test` check is the coverage-merge job itself, which fails first unless every shard succeeded, so a run bills one job fewer; the required check keeps its name.
 - A pull request that changes a build input builds the production image once, in `image_scan`'s cold build, instead of twice; `docker_build` runs on every push to `main` and on pull requests only to test its own workflow.
 - Bullet 8.3.0 supports Active Record 8.2, so it loads like any other gem and the Rails-main load shim is gone (#1337, #1409).
