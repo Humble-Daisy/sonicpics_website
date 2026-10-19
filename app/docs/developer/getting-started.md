@@ -230,7 +230,7 @@ Runs automatically when you `git push`. No setup needed beyond `bundle exec left
 |-------|------|
 | Stylesheet | `tailwindcss:build`, first, so system specs never read a half-written stylesheet |
 | Security scan | Brakeman |
-| Gem CVEs | bundler-audit, against the same vendored advisory database CI uses |
+| Gem CVEs | bundler-audit, after updating the advisory database to the latest, as CI's fresh clone does; it needs the network |
 | Code style | RuboCop |
 | ERB templates | erb_lint |
 | Markdown | `mdl` |

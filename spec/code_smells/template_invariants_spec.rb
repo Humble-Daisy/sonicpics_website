@@ -536,11 +536,8 @@ RSpec.describe "Template invariants" do
   end
 
   describe "CI and Lefthook run the same integrity-gated parallel suite" do
-    # CI and the local pre-push gate have drifted before (bundler-audit ran in
-    # CI only — PR #371), so the invariant is: BOTH run bin/parallel-rspec,
-    # which wraps parallel_tests with the example-count parity and merged
-    # coverage gates. A raw `rspec` invocation in either place silently loses
-    # those gates.
+    # CI and the pre-push gate have drifted before (#371, #1424): both run bin/parallel-rspec, whose parity
+    # and merged-coverage gates a raw `rspec` loses, and both audit gems against current advisories.
     let(:ci_workflow) { YAML.safe_load(File.read(root.join(".github/workflows/ci.yml")), aliases: true) }
     let(:lefthook_config) { YAML.safe_load(File.read(root.join("lefthook.yml")), aliases: true) }
 
@@ -599,6 +596,13 @@ RSpec.describe "Template invariants" do
           "expected `#{step["name"]}` to run only after the shard guard passed — `always()` " \
           "alone would also run it on a failed shard, with nothing merged"
       end
+    end
+
+    it "Lefthook's bundler-audit refreshes the advisory database, as CI's fresh clone does" do
+      run = lefthook_config.dig("pre-push", "commands", "bundler_audit", "run").to_s
+      expect(run).to include("bin/bundler-audit check --update"),
+        "CI clones the advisory database on every run; a local check against a stale copy passed while CI " \
+        "failed on GHSA-w3mx-4vv9-hjpg (css_parser, #1424), so the pre-push gate must update it first"
     end
 
     it "Lefthook's pre-push rspec command runs bin/parallel-rspec" do

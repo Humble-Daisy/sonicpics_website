@@ -35,11 +35,11 @@ pre-push:
         - merge
         - rebase
     bundler_audit:
-      # Same bin/bundler-audit and vendored advisory DB as CI's static job, so the verdicts match (#371).
+      # Updates the advisory DB first, as CI's fresh clone does, so the verdicts match (#371, #1424); offline it fails.
       # The importmap audit is deliberately not mirrored: it POSTs to the npm registry (#984).
       tags: security
       priority: 3
-      run: mise exec -- bin/bundler-audit
+      run: mise exec -- bin/bundler-audit check --update
       skip:
         - merge
         - rebase
