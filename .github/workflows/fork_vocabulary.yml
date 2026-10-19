@@ -59,7 +59,7 @@ jobs:
 
       - name: Run the suite under spec/fixtures/vocabulary.course.yml
         # Unsharded: no frozen split seed to download, and the merged coverage
-        # floor is enforced here rather than deferred to a coverage_merge job.
+        # floor is enforced here rather than deferred to ci.yml's test job.
         run: bin/parallel-rspec
 
       - name: Upload failure screenshots

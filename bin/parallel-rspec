@@ -23,7 +23,7 @@
 # takes only its shard's slice of the spec files — greedy-packed by the same
 # recorded runtimes the in-shard worker split uses (file size as fallback) —
 # and SKIPS the merged-coverage floor (each shard sees ~1/N of the suite;
-# the coverage_merge CI job collates every shard's resultset and enforces
+# the test CI job collates every shard's resultset and enforces
 # the floor there). Example-count parity still runs PER SHARD against the
 # shard's own enumeration, and each shard records its file list to
 # tmp/shard_files.txt so CI can assert the union of shards equals the full
@@ -75,7 +75,7 @@ class ParallelRspecRunner
     verify_count!
     puts "==> Example-count parity verified (#{executed_count}/#{expected_count})"
     if shard?
-      puts "==> Shard #{shard_index + 1}/#{shard_total}: coverage floor deferred to the coverage_merge job"
+      puts "==> Shard #{shard_index + 1}/#{shard_total}: coverage floor deferred to the test job"
     else
       enforce_coverage!
     end
@@ -149,7 +149,7 @@ class ParallelRspecRunner
     @shard_file_list = self.class.shard_files(
       all_files, runtimes: runtimes, count: shard_total, index: shard_index
     )
-    # Recorded so CI's coverage_merge job can assert the union of every
+    # Recorded so CI's test job can assert the union of every
     # shard's list equals the full spec set — a shard splitter that drops a
     # file must fail as loudly as a worker splitter that does (#495).
     File.write(SHARD_FILES_LIST, @shard_file_list.join("\n") + "\n")

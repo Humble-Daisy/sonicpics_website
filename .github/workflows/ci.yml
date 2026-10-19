@@ -88,7 +88,7 @@ jobs:
         run: bundle exec rake erb:check
 
   # Sharded test matrix (#495, PR #615), shaped by the CI_SHARDS and CI_WORKERS repository
-  # variables; the cross-shard checks run once in coverage_merge. /docs/developer/testing
+  # variables; the cross-shard checks run once in the test job. /docs/developer/testing
   split_seed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -194,7 +194,7 @@ jobs:
 
       - name: Restore recorded spec runtimes (seeds the IN-shard worker split)
         # Separate from the frozen shard seed: this live log balances the IN-shard workers, the
-        # seed balances files ACROSS shards. Restore-only — coverage_merge saves the reassembled log.
+        # seed balances files ACROSS shards. Restore-only — the test job saves the reassembled log.
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: tmp/parallel_runtime_rspec.log
@@ -203,9 +203,8 @@ jobs:
             parallel-runtime-
 
       - name: Run tests (shard ${{ matrix.shard }} of ${{ needs.split_seed.outputs.total }})
-        # Shard slice + in-shard parallel suite + per-shard example-count
-        # parity. The merged 90% coverage floor is enforced once, across all
-        # shards, in coverage_merge — see bin/parallel-rspec.
+        # Shard slice + in-shard workers + per-shard example-count parity; the merged 90% coverage
+        # floor runs once, across all shards, in the test job — see bin/parallel-rspec.
         run: bin/parallel-rspec
 
       - name: Upload test screenshots on failure
@@ -236,14 +235,24 @@ jobs:
           path: tmp/shard_out/
           retention-days: 7
 
-  coverage_merge:
+  # The ruleset requires `test` by name; `always()` keeps a failed shard from skipping it, which would pass.
+  test:
     needs: test_shard
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       RAILS_ENV: test
 
     steps:
+      - name: Every shard succeeded
+        id: shards
+        run: |
+          if [ "${{ needs.test_shard.result }}" != "success" ]; then
+            echo "test_shard: ${{ needs.test_shard.result }}"
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -267,7 +276,7 @@ jobs:
 
       - name: Upload merged coverage report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: always()
+        if: always() && steps.shards.outcome == 'success'
         with:
           name: coverage-report
           path: coverage/
@@ -278,21 +287,3 @@ jobs:
         with:
           path: tmp/parallel_runtime_rspec.log
           key: parallel-runtime-${{ github.sha }}
-
-  test:
-    # Summary gate: the branch ruleset requires the status context "test" by
-    # NAME, and a matrix reports as "test_shard (0)"/"(1)" — without this job
-    # every PR would wait forever on a context that never arrives. It exists
-    # only to give the ruleset a stable name that means "both shards AND the
-    # cross-shard merge passed".
-    needs: [test_shard, coverage_merge]
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: All shards and the merge succeeded
-        run: |
-          if [ "${{ needs.test_shard.result }}" != "success" ] || [ "${{ needs.coverage_merge.result }}" != "success" ]; then
-            echo "test_shard: ${{ needs.test_shard.result }}, coverage_merge: ${{ needs.coverage_merge.result }}"
-            exit 1
-          fi

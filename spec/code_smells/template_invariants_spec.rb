@@ -569,20 +569,36 @@ RSpec.describe "Template invariants" do
         "runner's 4 vCPUs by default; a fork on a smaller runner sets its own"
     end
 
-    it "the merged coverage floor and shard-union parity run in coverage_merge" do
-      run_steps = Array(ci_workflow.dig("jobs", "coverage_merge", "steps")).map { |s| s["run"].to_s }
+    it "the merged coverage floor and shard-union parity run in the test job" do
+      run_steps = Array(ci_workflow.dig("jobs", "test", "steps")).map { |s| s["run"].to_s }
       expect(run_steps).to include(match(%r{bin/ci-coverage-merge})),
-        "expected coverage_merge to run bin/ci-coverage-merge — shards skip the merged " \
+        "expected the test job to run bin/ci-coverage-merge — shards skip the merged " \
         "floor (each sees ~1/N of the suite), so without this job coverage is unenforced " \
         "and a shard-splitter bug that drops files is invisible"
     end
 
-    it "keeps a summary job named `test` gating on shards AND the merge (ruleset context)" do
+    it "the `test` job is the merge itself, and fails unless every shard succeeded (ruleset context)" do
       test_job = ci_workflow.dig("jobs", "test") || {}
-      expect(Array(test_job["needs"])).to include("test_shard", "coverage_merge"),
-        "the branch ruleset requires the status context `test` BY NAME; the summary job " \
-        "must need both test_shard and coverage_merge or a shard/merge failure leaves a " \
-        "mergeable-looking PR (or, if the job vanishes, every PR blocks forever)"
+      steps = Array(test_job["steps"])
+      guard_index = steps.index { |s| s["run"].to_s.include?("needs.test_shard.result") }
+      merge_index = steps.index { |s| s["run"].to_s.include?("bin/ci-coverage-merge") }
+
+      expect(ci_workflow["jobs"].keys).not_to include("coverage_merge"),
+        "expected one `test` job doing the merge — a separate summary job bills its own minute"
+      expect(Array(test_job["needs"])).to include("test_shard")
+      expect(test_job["if"].to_s).to include("always()"),
+        "the ruleset requires `test` BY NAME; without `if: always()` a failed shard skips " \
+        "the job, and a skipped required check reads as passing"
+      expect(guard_index).not_to be_nil,
+        "expected a step that fails the job unless needs.test_shard.result is success"
+      expect(steps[guard_index]["run"]).to include("exit 1")
+      expect(merge_index).to be > guard_index, "expected the shard guard to run before the merge"
+
+      steps.drop(guard_index + 1).select { |s| s["if"].to_s.include?("always()") }.each do |step|
+        expect(step["if"]).to include("steps.#{steps[guard_index]["id"]}.outcome"),
+          "expected `#{step["name"]}` to run only after the shard guard passed — `always()` " \
+          "alone would also run it on a failed shard, with nothing merged"
+      end
     end
 
     it "Lefthook's pre-push rspec command runs bin/parallel-rspec" do
@@ -806,9 +822,8 @@ RSpec.describe "Template invariants" do
   end
 
   describe "CI persists the spec runtime log for balanced parallel splits (#488)" do
-    # tmp/parallel_runtime_rspec.log feeds time-based spec splitting, so it must
-    # be cached across CI runs; since #495's sharding the lifecycle spans the
-    # split_seed/test_shard/coverage_merge jobs. See /docs/developer/testing.
+    # tmp/parallel_runtime_rspec.log seeds time-based splitting, so CI caches it across
+    # the split_seed/test_shard/test jobs (#488). See /docs/developer/testing.
     let(:ci_workflow) { YAML.safe_load(File.read(root.join(".github/workflows/ci.yml")), aliases: true) }
 
     def job_steps(name) = Array(ci_workflow.dig("jobs", name, "steps"))
@@ -818,7 +833,7 @@ RSpec.describe "Template invariants" do
         step["uses"].to_s.include?("actions/cache/restore") &&
           step.dig("with", "path").to_s.include?("parallel_runtime_rspec.log")
       end
-      save = job_steps("coverage_merge").find do |step|
+      save = job_steps("test").find do |step|
         step["uses"].to_s.include?("actions/cache/save") &&
           step.dig("with", "path").to_s.include?("parallel_runtime_rspec.log")
       end
@@ -826,7 +841,7 @@ RSpec.describe "Template invariants" do
         "expected test_shard to restore tmp/parallel_runtime_rspec.log so in-shard " \
         "worker balancing has a seed"
       expect(save).not_to be_nil,
-        "expected coverage_merge to save the reassembled runtime log — each shard's " \
+        "expected the test job to save the reassembled runtime log — each shard's " \
         "log holds only its own files' timings, so without the merged save the next " \
         "run's split degrades to file size (#488)"
       expect(restore.dig("with", "restore-keys").to_s).to be_present,

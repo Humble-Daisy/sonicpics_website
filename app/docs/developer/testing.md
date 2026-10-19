@@ -26,7 +26,7 @@ Worker count comes from `PARALLEL_TEST_PROCESSORS` or the machine's core count.
 
 ### CI sharding
 
-CI splits the suite across a shard matrix (#495, PR #615) — 8 shards of 4 workers by default, the free public-runner shape. A fork sets the `CI_SHARDS` and `CI_WORKERS` repository variables in its Actions settings to change that without editing a tracked file; private repositories are billed per job, rounded up to the minute, so fewer, longer shards cost less there. With `CI_SHARD_INDEX` and `CI_SHARD_TOTAL` set, `bin/parallel-rspec` takes only its shard's slice of the spec files — greedy-packed by recorded per-file runtimes, with file size as the fallback weight — and skips the merged-coverage floor (each shard sees only a fraction of the suite; the `coverage_merge` CI job collates every shard's resultset and enforces the floor there). Example-count parity still runs per shard against the shard's own enumeration, and each shard records its file list so CI can assert the union of shards equals the full spec set — the shard splitter gets the same distrust as the worker splitter.
+CI splits the suite across a shard matrix (#495, PR #615) — 8 shards of 4 workers by default, the free public-runner shape. A fork sets the `CI_SHARDS` and `CI_WORKERS` repository variables in its Actions settings to change that without editing a tracked file; private repositories are billed per job, rounded up to the minute, so fewer, longer shards cost less there. With `CI_SHARD_INDEX` and `CI_SHARD_TOTAL` set, `bin/parallel-rspec` takes only its shard's slice of the spec files — greedy-packed by recorded per-file runtimes, with file size as the fallback weight — and skips the merged-coverage floor (each shard sees only a fraction of the suite; the `test` CI job collates every shard's resultset and enforces the floor there). Example-count parity still runs per shard against the shard's own enumeration, and each shard records its file list so CI can assert the union of shards equals the full spec set — the shard splitter gets the same distrust as the worker splitter.
 
 ### The runtime log lifecycle
 
@@ -34,7 +34,7 @@ CI splits the suite across a shard matrix (#495, PR #615) — 8 shards of 4 work
 
 - `split_seed` snapshots one **frozen** copy of the log, downloaded by every shard — the cross-shard split must be computed from identical input or shards overlap and leave holes.
 - `test_shard` restores the live log separately to seed *in-shard* worker balancing.
-- `coverage_merge` reassembles every shard's partial log and saves the cache for the next run.
+- `test` reassembles every shard's partial log and saves the cache for the next run.
 
 A cache miss is harmless: the split falls back to file size — still correct, just less balanced.
 

@@ -5,7 +5,7 @@
 #
 # Each test shard skips the merged-coverage floor (it sees ~1/N of the
 # suite) and uploads its coverage resultset plus its shard file list. This
-# script, run by the coverage_merge job, does the three cross-shard checks
+# script, run by CI's test job, does the three cross-shard checks
 # exactly once:
 #
 #   1. Shard-union parity — the union of every shard's file list must equal
