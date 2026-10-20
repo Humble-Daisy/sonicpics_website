@@ -11,9 +11,9 @@ RSpec.describe "shared/_user_menu_avatar_button.html.erb", type: :view do
     expect(rendered).to include('aria-controls="user-menu"')
   end
 
-  it "carries a static aria-label naming the user (D1: bell aria moved to bell link)" do
+  it "names the button with the initials it shows, then the user (WCAG 2.5.3 Label in Name)" do
     render partial: "shared/user_menu_avatar_button", locals: { user: user }
-    expect(rendered).to match(/aria-label="Open user menu for Nell Ramirez"/)
+    expect(rendered).to match(/aria-label="NR, open user menu for Nell Ramirez"/)
   end
 
   it "does NOT carry aria-labelledby pointing to a broadcast-replaceable frame (D1)" do

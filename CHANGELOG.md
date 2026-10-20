@@ -87,6 +87,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Fixed
 
+- axe-core 4.14 enforces WCAG 2.5.3 Label in Name, and every control whose name left out the text it shows now leads with that text: the user menu, avatar and logo buttons name the initials, the settings nav, ledger filters, Allow again and the time picker carry their visible words, and Lexxy's ALT button is renamed by the host until basecamp/lexxy#1304 ships.
 - css_parser 3.3.0 (Lookbook's, development only) fixes GHSA-w3mx-4vv9-hjpg, a local-file read through `@import`, so bundler-audit passes again.
 - A password lock emails the holder (`NotificationMailer#password_locked`), as the security guide promised: `PasswordLockedNotifier` declared no email delivery, and security notifications never reach the digest, so a signed-out holder learned nothing. The notifications guide lists the notifier once, not twice.
 - `bin/rails action_text:clear_filename_alts` reloads each rich text under its write lock before cleaning it, so an edit saved while the task runs is no longer overwritten by the copy the task loaded earlier.

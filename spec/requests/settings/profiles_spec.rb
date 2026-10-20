@@ -17,6 +17,12 @@ RSpec.describe "Account Profiles", type: :request do
         get edit_settings_profile_path
         expect(response).to have_http_status(:ok)
       end
+
+      it "names the avatar button with the initials it shows (WCAG 2.5.3 Label in Name)" do
+        get edit_settings_profile_path
+        button = Capybara.string(response.body).find("button:has(#user_avatar_profile)")
+        expect(button[:"aria-label"]).to contain_visible_text(button.text).and include(user.initials)
+      end
     end
 
     describe "PATCH /account/profile" do

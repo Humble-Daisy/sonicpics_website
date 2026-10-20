@@ -123,6 +123,7 @@ RSpec.describe "Operations activity ledger top actors", type: :request do
 
     expect(link[:href]).to include(CGI.escape(ada.email_address))
     expect(link["data-turbo-frame"]).to eq("_top")
+    expect(link[:"aria-label"]).to contain_visible_text(link.text)
   end
 
   it "says nothing at all when no row has an actor" do

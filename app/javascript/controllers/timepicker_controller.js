@@ -5,7 +5,8 @@ export default class extends Controller {
   static targets = ["trigger", "popover", "label", "hidden", "hour", "minute", "ampm"]
   static values = {
     format: { type: String, default: "h24" },
-    step:   { type: Number, default: 1 }
+    step:   { type: Number, default: 1 },
+    name:   String
   }
 
   connect() {
@@ -118,6 +119,7 @@ export default class extends Controller {
     const hidden  = `${h}:${m}`
 
     this.labelTarget.textContent = display
+    this.triggerTarget.setAttribute("aria-label", `${this.nameValue}, ${display}`)
     if (this.hasHiddenTarget) this.hiddenTarget.value = hidden
 
     this.element.dispatchEvent(new CustomEvent("timepicker:change", {

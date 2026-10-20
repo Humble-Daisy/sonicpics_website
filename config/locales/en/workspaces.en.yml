@@ -202,7 +202,7 @@ en:
       source_unavailable: "That identity source is not available."
       edit:
         logo_label: "Logo"
-        change_logo: "Change logo"
+        change_logo: "%{initials}, change logo"
   pending_joins:
     create:
       joined: "Welcome to %{workspace_name}."

@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Accessibility simulation drop-up", type: :system do
   def trigger_button
-    find("button[aria-label='#{I18n.t('a11y_sim.trigger_aria_label')}']")
+    find("button[data-a11y-sim-target='trigger']")
   end
 
   def mode_item(mode_key)
@@ -31,6 +31,12 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
         expect(page).to have_content(I18n.t("a11y_sim.prefix"))
         expect(page).to have_content(I18n.t("a11y_sim.modes.normal"))
       end
+    end
+
+    it "is named by the words it shows, so the name follows the mode (WCAG 2.5.3 Label in Name)" do
+      visit root_path
+      expect(trigger_button[:"aria-label"]).to be_nil
+      expect(trigger_button).to have_no_css("[aria-hidden='true']", text: I18n.t("a11y_sim.dev_badge"))
     end
 
     it "opens the menu when the trigger is clicked" do
@@ -118,7 +124,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
         window.localStorage.setItem('a11y_sim_mode', 'not-a-real-mode');
       JS
       page.refresh
-      expect(page).to have_css("button[aria-label='#{I18n.t('a11y_sim.trigger_aria_label')}']")
+      expect(page).to have_css("button[data-a11y-sim-target='trigger']")
       expect(page).not_to have_css("body[class*='a11y-sim-']")
     end
 

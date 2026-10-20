@@ -1,11 +1,6 @@
 <%# locals: (user:) -%>
-<%# The avatar trigger button. v2: carries a severity-colored indicator
-    dot at the avatar's bottom-right, positioned as a SIBLING of the
-    avatar image inside the user_avatar_header wrapper (not inside the
-    button's accessible-name path) — preserves D1's a11y lesson while
-    restoring the bell-on-avatar UX. The button's aria-label remains
-    static identity-only; notification semantics live in the user-menu
-    Notifications row's aria-live region. %>
+<%# The label names only who this is; unread counts are announced by the menu's Notifications row.
+    It leads with the initials the avatar shows, so speech users can say what they see (WCAG 2.5.3). %>
 <% summary ||= unread_notification_summary(user) %>
 <button data-menu-target="trigger"
         data-action="click->menu#toggle keydown->menu#triggerKeydown"
@@ -13,7 +8,7 @@
         aria-haspopup="menu"
         aria-expanded="false"
         aria-controls="user-menu"
-        aria-label="<%= t("navigation.user_menu_label_simple", name: user.full_name) %>"
+        aria-label="<%= t("navigation.user_menu_label_simple", initials: user.identity.initials, name: user.full_name) %>"
         class="btn-touch-target gap-1 rounded-full
                text-on-chrome
                focus-ring-chrome

@@ -1,6 +1,8 @@
 <%# locals: (workspace:) %>
+<%# The button's name lives here so a rename's stream swap carries the new initials with it. %>
 <span id="workspace_logo_branding" class="block relative">
   <%= workspace_icon_for(workspace, size: :lg) %>
+  <span class="sr-only"><%= t("workspaces.brandings.edit.change_logo", initials: workspace.identity.initials) %></span>
   <span class="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/20
                transition-colors flex items-center justify-center">
     <%= icon(:pencil, size: :sm,
