@@ -129,7 +129,7 @@ group :development do
   gem "hotwire-spark"
 end
 
-gem "axe-core-rspec", "~> 4.13", group: :test
+gem "axe-core-rspec", "~> 4.14", group: :test
 gem "axe-core-api", "~> 4.11", group: :test
 
 gem "lefthook", "~> 2.2", groups: [ :development, :test ], require: false
@@ -141,7 +141,7 @@ gem "lexxy", "~> 1.0"
 # Runtime dependency: the vendored app/components/ui/* are ViewComponents and are
 # loaded in production. This MUST stay a top-level gem — modelrails_ui (below) only
 # GENERATES the components in development and is excluded from production.
-gem "view_component", "~> 4.15"
+gem "view_component", "~> 4.16"
 
 # Runtime dependency of the vendored ApplicationComponent#cn helper: tailwind_merge
 # resolves conflicting Tailwind utilities so a per-instance `class:` passthrough
