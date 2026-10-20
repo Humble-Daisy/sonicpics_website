@@ -47,6 +47,11 @@ RSpec.describe "Template invariants" do
         "expected Dockerfile ARG RUBY_VERSION to equal .tool-versions Ruby (#{tool_versions_ruby})"
     end
 
+    it "hotcell/Dockerfile ARG RUBY_VERSION matches .tool-versions" do
+      expect(File.read(root.join("hotcell/Dockerfile"))).to match(/^ARG RUBY_VERSION=#{Regexp.escape(tool_versions_ruby)}\b/),
+        "expected the Hot Cell image's ARG RUBY_VERSION to equal .tool-versions Ruby (#{tool_versions_ruby})"
+    end
+
     it "Dockerfile comment references .tool-versions (not the obsolete .ruby-version)" do
       expect(dockerfile).to include(".tool-versions"),
         "expected Dockerfile to reference .tool-versions in its comments"
@@ -603,6 +608,23 @@ RSpec.describe "Template invariants" do
       expect(run).to include("bin/bundler-audit check --update"),
         "CI clones the advisory database on every run; a local check against a stale copy passed while CI " \
         "failed on GHSA-w3mx-4vv9-hjpg (css_parser, #1424), so the pre-push gate must update it first"
+    end
+
+    it "Lefthook builds the cell image when hotcell/ changes" do
+      command = lefthook_config.dig("pre-push", "commands", "hotcell_build") || {}
+
+      expect(command["glob"].to_s).to include("hotcell/**")
+      expect(command["run"].to_s).to include("docker build --pull hotcell")
+      expect(command["files"].to_s).to include("origin/main...HEAD"),
+        "diffed against main, like docker_build, so a rebase replay still builds the cell"
+    end
+
+    it "audits the cell's gems pre-push and in CI" do
+      static_runs = Array(ci_workflow.dig("jobs", "static", "steps")).map { |step| step["run"].to_s }
+
+      expect(lefthook_config.dig("pre-push", "commands", "bundler_audit", "run").to_s).to include("bin/bundler-audit check hotcell")
+      expect(static_runs).to include(match(%r{bin/bundler-audit check hotcell})),
+        "the cell's Gemfile.lock is a second dependency graph; auditing only the app's lock leaves it unchecked"
     end
 
     it "Lefthook's pre-push rspec command runs bin/parallel-rspec" do
@@ -1630,15 +1652,166 @@ RSpec.describe "Template invariants" do
         "on a private fork that was ~87 billed minutes per gem, six gems in one morning (2026-10-14)"
     end
 
-    it "ignores exactly the gems the lockfile takes from git" do
+    it "ignores exactly the git-pinned gems and the Hot Cell family" do
       lockfile = Bundler::LockfileParser.new(File.read(root.join("Gemfile.lock")))
-      from_git = lockfile.specs.select { |s| s.source.is_a?(Bundler::Source::Git) }.map(&:name).uniq.sort
+      from_git = lockfile.specs.select { |s| s.source.is_a?(Bundler::Source::Git) }.map(&:name)
+      hotcell = lockfile.specs.map(&:name).grep(/\A(hotcell|activestorage-hotcell)/)
+      hand_bumped = (from_git + hotcell).uniq.sort
       ignored = Array(bundler_updates["ignore"]).map { |entry| entry["dependency-name"] }.sort
 
-      expect(ignored).to eq(from_git),
-        "Dependabot's bundler ignore must list exactly the git-pinned gems. Missing: #{(from_git - ignored).join(", ")}; " \
-        "released, so drop the ignore: #{(ignored - from_git).join(", ")} " \
-        "(/docs/developer/getting-started, Rails comes from a pinned commit)"
+      expect(ignored).to eq(hand_bumped),
+        "Dependabot's bundler ignore must list exactly the git-pinned gems and the Hot Cell family (bumped by hand " \
+        "in both lockfiles together). Missing: #{(hand_bumped - ignored).join(", ")}; no longer hand-bumped, so drop " \
+        "the ignore: #{(ignored - hand_bumped).join(", ")} (/docs/developer/getting-started, /docs/developer/hot-cell)"
+    end
+  end
+
+  describe "Hot Cell ships wired but off" do
+    it "names no Hot Cell class in any environment file" do
+      hits = Dir[root.join("config/environments/*.rb")].select { |file| File.read(file).match?(/HotCell/) }
+
+      expect(hits).to be_empty,
+        "the Hot Cell flip lives only in config/initializers/hotcell.rb, keyed on the cell being enabled: #{hits.join(", ")}"
+      expect(File.read(root.join("config/initializers/hotcell.rb"))).to include('HotCell.register "active_storage"')
+    end
+
+    it "loads the client everywhere and the server only in test" do
+      gemfile = File.read(root.join("Gemfile"))
+
+      expect(gemfile).to match(/^gem "activestorage-hotcell-client"/)
+      expect(gemfile[/^group :test do(.*?)^end/m, 1]).to include('gem "activestorage-hotcell-server", require: false'),
+        "the cell's gems belong in the test group only, for the proving spec; the production image installs without it"
+    end
+
+    hotcell_versions = lambda do |*lockfiles|
+      lockfiles.flat_map do |lockfile|
+        Bundler::LockfileParser.new(lockfile).specs.select { |spec| spec.name.match?(/\A(hotcell|activestorage-hotcell)/) }
+      end.map { |spec| "#{spec.name} #{spec.version}" }.uniq
+    end
+
+    it "Dependabot leaves the Hot Cell gems to a hand bump of both lockfiles" do
+      updates = YAML.safe_load(File.read(root.join(".github/dependabot.yml"))).fetch("updates")
+      bundler = updates.find { |update| update["package-ecosystem"] == "bundler" }
+      family = hotcell_versions.call(File.read(root.join("Gemfile.lock"))).map { |entry| entry.split.first }
+
+      expect(family).to include("activestorage-hotcell-client", "hotcell-client")
+      expect(Array(bundler["ignore"]).map { |entry| entry["dependency-name"] }).to include(*family),
+        "a Dependabot bump of one lockfile alone would leave the app and the cell on different Hot Cell versions"
+      expect(updates.flat_map { |update| Array(update["directories"] || update["directory"]) }).not_to include("/hotcell")
+    end
+
+    it "the app and the cell lock the same Hot Cell version" do
+      app_lock = File.read(root.join("Gemfile.lock"))
+      locked = hotcell_versions.call(app_lock, File.read(root.join("hotcell/Gemfile.lock")))
+
+      expect(locked.map { |entry| entry.split.last }.uniq.size).to eq(1),
+        "the app's client and the cell's server must run one Hot Cell version: #{locked.sort.join(", ")}"
+      expect(locked.map(&:split).map(&:first)).to include("hotcell-client", "hotcell-server", "activestorage-hotcell-server")
+    end
+
+    it "catches a cell locked to another Hot Cell version" do
+      skewed = File.read(root.join("hotcell/Gemfile.lock")).sub(/^    hotcell-server \([^)]+\)/, "    hotcell-server (9.9.9)")
+      expect(skewed).to include("hotcell-server (9.9.9)"), "the injection point moved; the simulation proves nothing"
+
+      versions = hotcell_versions.call(File.read(root.join("Gemfile.lock")), skewed).map { |entry| entry.split.last }.uniq
+      expect(versions.size).to eq(2)
+    end
+
+    configured_operations = lambda do |initializer|
+      prefix = "ActiveStorage::HotCell::Client::"
+      stack = [ Prism.parse(initializer).value ]
+      found = []
+      while (node = stack.pop)
+        if node.is_a?(Prism::ConstantPathNode) && node.full_name.start_with?(prefix)
+          found << "active_storage/hot_cell/server/#{node.full_name.delete_prefix(prefix).split("::").map(&:underscore).join("/")}"
+        else
+          stack.concat(node.compact_child_nodes)
+        end
+      end
+      found.uniq
+    end
+
+    required_operations = lambda do |operation_sources|
+      operation_sources.flat_map do |source|
+        stack = [ Prism.parse(source).value ]
+        found = []
+        while (node = stack.pop)
+          argument = node.is_a?(Prism::CallNode) && node.name == :require ? node.arguments&.arguments&.first : nil
+          found << argument.unescaped if argument.is_a?(Prism::StringNode)
+          stack.concat(node.compact_child_nodes)
+        end
+        found
+      end
+    end
+
+    let(:initializer) { File.read(root.join("config/initializers/hotcell.rb")) }
+    let(:operation_sources) { Dir[root.join("hotcell/operations/**/*.rb")].map { |file| File.read(file) } }
+
+    it "the cell serves exactly the operations the app configures" do
+      expect(configured_operations.call(initializer)).to include("active_storage/hot_cell/server/transformers/image/vips")
+      expect(required_operations.call(operation_sources)).to match_array(configured_operations.call(initializer)),
+        "every Hot Cell class config/initializers/hotcell.rb names needs its operation required under hotcell/operations/, " \
+        "and the cell requires nothing the app never calls (/docs/developer/hot-cell)"
+    end
+
+    it "the cell answers before the app stops waiting" do
+      keywords = lambda do |source, method|
+        stack = [ Prism.parse(source).value ]
+        found = {}
+        while (node = stack.pop)
+          if node.is_a?(Prism::CallNode) && node.name == method
+            node.arguments&.arguments&.grep(Prism::KeywordHashNode)&.each do |hash|
+              hash.elements.each { |pair| found[pair.key.unescaped.to_sym] = pair.value.slice if pair.key.is_a?(Prism::SymbolNode) }
+            end
+          end
+          stack.concat(node.compact_child_nodes)
+        end
+        found
+      end
+      limits = keywords.call(File.read(root.join("hotcell/config.rb")), :limits)
+      timeout = Integer(keywords.call(initializer, :register).fetch(:timeout, "30"))
+      answer_within = Integer(limits.fetch(:queue_wait, "10")) + Integer(limits.fetch(:deadline, "60")) + 1
+
+      expect(answer_within).to be < timeout,
+        "the cell may take #{answer_within}s (queue_wait + deadline + 1) and the app waits #{timeout}s: every boot warns, " \
+        "and a slow request is a client timeout instead of the cell's own answer (/docs/developer/hot-cell, Tune it)"
+    end
+
+    it "catches an operation the app never calls, and a class the cell does not serve" do
+      extra = operation_sources + [ %(require "active_storage/hot_cell/server/previewers/pdf/mutool"\n) ]
+      expect(required_operations.call(extra)).not_to match_array(configured_operations.call(initializer))
+
+      unserved = initializer.sub("previewers = []", "previewers = [ ActiveStorage::HotCell::Client::Previewers::Pdf::Mutool ]")
+      expect(unserved).not_to eq(initializer), "the injection point moved; the simulation proves nothing"
+      expect(required_operations.call(operation_sources)).not_to match_array(configured_operations.call(unserved))
+    end
+  end
+
+  describe "CI scans the cell image" do
+    let(:scan_workflow) { YAML.safe_load(File.read(root.join(".github/workflows/hotcell_image_scan.yml")), aliases: true) }
+    let(:triggers) { scan_workflow[true] }
+    let(:scan_job) { scan_workflow.dig("jobs", "scan_hotcell_image") || {} }
+    let(:build_step) { Array(scan_job["steps"]).find { |step| step["uses"].to_s.include?("docker/build-push-action") } || {} }
+    let(:trivy_step) { Array(scan_job["steps"]).find { |step| step["uses"].to_s.include?("aquasecurity/trivy-action") } || {} }
+
+    it "runs on changes to the cell, and weekly only where a fork asks" do
+      expect(triggers.dig("pull_request", "paths")).to include("hotcell/**", ".github/workflows/hotcell_image_scan.yml")
+      expect(triggers).to include("schedule")
+      expect(scan_job["if"].to_s).to include("vars.HOTCELL_SCAN"),
+        "a fork that keeps the cell off must not pay for a weekly cold build of it"
+    end
+
+    it "builds the cell from scratch and loads it for the scanner" do
+      expect(build_step.dig("with", "context")).to eq("hotcell")
+      expect(build_step.dig("with", "load")).to be(true)
+      expect(build_step.dig("with", "no-cache")).to be(true), "a cached apt layer hides current package state (#536)"
+      expect(build_step.dig("with", "cache-from")).to be_nil
+    end
+
+    it "fails on a fixable HIGH or CRITICAL finding" do
+      expect(trivy_step.dig("with", "severity")).to eq("CRITICAL,HIGH")
+      expect(trivy_step.dig("with", "exit-code")).to eq("1")
+      expect(trivy_step.dig("with", "image-ref")).to eq(build_step.dig("with", "tags"))
     end
   end
 

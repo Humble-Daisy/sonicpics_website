@@ -2,7 +2,7 @@
 # previews in this process. See /docs/developer/hot-cell.
 HotCell.root = ENV["HOTCELL_ROOT"].presence
 HotCell.group = ENV["HOTCELL_GROUP"].presence
-cell = HotCell.register "active_storage"
+cell = HotCell.register "active_storage", timeout: 30
 
 if cell.enabled?
   Rails.application.config.active_storage.variant_processor = ActiveStorage::HotCell::Client::Transformers::Image::Vips

@@ -31,6 +31,13 @@ updates:
     - dependency-name: activestorage
     - dependency-name: activesupport
     - dependency-name: rspec-rails
+    # Hot Cell runs on both sides of a socket at one version, so both lockfiles move together by hand;
+    # bin/bundler-audit check hotcell still flags any advisory in the cell's gems (/docs/developer/hot-cell).
+    - dependency-name: activestorage-hotcell-client
+    - dependency-name: activestorage-hotcell-server
+    - dependency-name: hotcell-client
+    - dependency-name: hotcell-core
+    - dependency-name: hotcell-server
 - package-ecosystem: github-actions
   directory: "/"
   schedule:

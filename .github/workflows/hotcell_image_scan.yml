@@ -1,0 +1,52 @@
+name: Hot Cell Image Scan
+
+# Builds the Hot Cell image from scratch and scans its OS packages on cell changes; weekly only with
+# the HOTCELL_SCAN repository variable set, so a fork that keeps the cell off pays nothing. /docs/developer/hot-cell
+
+on:
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC
+  pull_request:
+    paths:
+      - "hotcell/**"
+      - ".trivyignore"
+      - ".github/workflows/hotcell_image_scan.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan_hotcell_image:
+    if: github.event_name != 'schedule' || vars.HOTCELL_SCAN == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+
+      - name: Build the Hot Cell image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: hotcell
+          file: hotcell/Dockerfile
+          push: false
+          load: true
+          no-cache: true
+          pull: true
+          platforms: linux/amd64
+          tags: modelrails_base-hotcell:scan-${{ github.sha }}
+
+      - name: Scan for HIGH/CRITICAL CVEs with a fix available
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: modelrails_base-hotcell:scan-${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true

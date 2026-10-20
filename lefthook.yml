@@ -39,7 +39,7 @@ pre-push:
       # The importmap audit is deliberately not mirrored: it POSTs to the npm registry (#984).
       tags: security
       priority: 3
-      run: mise exec -- bin/bundler-audit check --update
+      run: mise exec -- bin/bundler-audit check --update && mise exec -- bin/bundler-audit check hotcell
       skip:
         - merge
         - rebase
@@ -85,6 +85,16 @@ pre-push:
       files: git diff --name-only origin/main...HEAD
       glob: "{Dockerfile,.dockerignore,Gemfile,Gemfile.lock,.tool-versions,bin/docker-entrypoint}"
       run: mise exec -- bin/docker-build-check
+      skip:
+        - merge
+        - rebase
+    hotcell_build:
+      tags: build
+      priority: 8
+      # The Hot Cell image, built only when hotcell/ changed; diffed against main like docker_build.
+      files: git diff --name-only origin/main...HEAD
+      glob: "hotcell/**"
+      run: docker build --pull hotcell
       skip:
         - merge
         - rebase

@@ -63,6 +63,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: bin/bundler-audit
 
+      - name: Scan for known security vulnerabilities in the Hot Cell image's gems
+        if: ${{ !cancelled() }}
+        run: bin/bundler-audit check hotcell
+
       - name: Scan for security vulnerabilities in JavaScript dependencies
         if: ${{ !cancelled() }}
         run: |
