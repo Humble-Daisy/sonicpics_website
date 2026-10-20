@@ -66,15 +66,11 @@ gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 2.2"
-# image_processing 2.0 dropped the transitive backend dep; libvips is installed in CI
-# (.github/workflows/ci.yml) and the production Dockerfile, and Rails 8.1 defaults
-# active_storage.variant_processor to :vips, so we declare ruby-vips explicitly.
-# require: false skips Bundler.require — Active Storage's image_processing
-# transformer pulls in `vips` lazily on first variant call. active_storage_validations
-# also eager-loads its vips analyzer at Rails boot, so libvips must be installed in
-# every job that boots Rails (test_shard, static).
+# Variants run in this process while the Hot Cell is off (config/initializers/hotcell.rb), so ruby-vips
+# and the libvips system library stay. Active Storage's engine loads it at boot, whatever require says.
 gem "ruby-vips", require: false
 gem "active_storage_validations"
+gem "activestorage-hotcell-client"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -118,6 +114,7 @@ group :development, :test do
 end
 
 group :test do
+  gem "activestorage-hotcell-server", require: false
   gem "capybara"
   gem "cuprite" # pure-Ruby CDP driver (ferrum) — no Node/browser-driver dependency
   gem "simplecov", require: false

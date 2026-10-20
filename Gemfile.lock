@@ -136,6 +136,14 @@ GEM
       activestorage (>= 7.0.1)
       activesupport (>= 7.0.1)
       marcel (>= 1.0.3)
+    activestorage-hotcell-client (1.2.0)
+      activestorage (>= 8.2.0.alpha)
+      hotcell-client (= 1.2.0)
+    activestorage-hotcell-server (1.2.0)
+      hotcell-server (= 1.2.0)
+      image_processing (>= 2.2.0)
+      mini_magick (>= 5.4.0)
+      ruby-vips (>= 2.2.1)
     addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
     android_key_attestation (0.3.0)
@@ -275,6 +283,12 @@ GEM
     herb (0.11.0-x86_64-linux-musl)
     highline (3.1.2)
       reline
+    hotcell-client (1.2.0)
+      activesupport (>= 7.1)
+      hotcell-core (= 1.2.0)
+    hotcell-core (1.2.0)
+    hotcell-server (1.2.0)
+      hotcell-core (= 1.2.0)
     hotwire-spark (0.1.13)
       listen
       rails (>= 7.0.0)
@@ -380,6 +394,8 @@ GEM
       mixlib-config
       mixlib-shellout
       uri
+    mini_magick (5.4.0)
+      logger
     mini_mime (1.1.5)
     minitest (6.0.6)
       drb (~> 2.0)
@@ -699,6 +715,8 @@ PLATFORMS
 
 DEPENDENCIES
   active_storage_validations
+  activestorage-hotcell-client
+  activestorage-hotcell-server
   addressable (~> 2.8)
   axe-core-api (~> 4.11)
   axe-core-rspec (~> 4.13)
@@ -772,6 +790,8 @@ CHECKSUMS
   activemodel (8.2.0.alpha)
   activerecord (8.2.0.alpha)
   activestorage (8.2.0.alpha)
+  activestorage-hotcell-client (1.2.0) sha256=36c782e41e9de6e549bf5f2688913914604fb462fb0dc3e360f2b17e5747fc31
+  activestorage-hotcell-server (1.2.0) sha256=c95d8e4fb0fcd3fec9ed7db4e44fe925e9025102771a6f2f87a9608bbfacedac
   activesupport (8.2.0.alpha)
   addressable (2.9.0) sha256=7fdf6ac3660f7f4e867a0838be3f6cf722ace541dd97767fa42bc6cfa980c7af
   android_key_attestation (0.3.0) sha256=467eb01a99d2bb48ef9cf24cc13712669d7056cba5a52d009554ff037560570b
@@ -849,6 +869,9 @@ CHECKSUMS
   herb (0.11.0-x86_64-linux-gnu) sha256=aba19094bc1618e1bc0fb59db52ba251c93a24598f5228815616b282f10bb8a0
   herb (0.11.0-x86_64-linux-musl) sha256=e27a08fe72304c8043e851b568ed30eaa45f06b5333d151939a7834e936c01aa
   highline (3.1.2) sha256=67cbd34d19f6ef11a7ee1d82ffab5d36dfd5b3be861f450fc1716c7125f4bb4a
+  hotcell-client (1.2.0) sha256=f32f56892ee0eef5e96613f67038558df55f6bf0b6198d53483ccd72a1c75bda
+  hotcell-core (1.2.0) sha256=7a1653522bcb0ae0a5583c3111709f0008188cc34f79505b057331de1b2d68ac
+  hotcell-server (1.2.0) sha256=8bef1003490aeb080841cd8b07f87af80584fe8cd430f45df52e0f1f006b5db9
   hotwire-spark (0.1.13) sha256=0a24799b0942fc9b7ea3e560a5aba3f4dd9a6086958a25929894340f920fb499
   htmlbeautifier (1.4.3) sha256=b43d08f7e2aa6ae1b5a6f0607b4ed8954c8d4a8e85fd2336f975dda1e4db385b
   htmlentities (4.4.2) sha256=bbafbdf69f2eca9262be4efef7e43e6a1de54c95eb600f26984f71d2fe96c5c3
@@ -879,6 +902,7 @@ CHECKSUMS
   markdowndocs (0.11.4) sha256=f270d569c052ec273d025b66dc169cd5a122d9e0510825e88fa6a6a9e5a16d51
   matrix (0.4.3) sha256=a0d5ab7ddcc1973ff690ab361b67f359acbb16958d1dc072b8b956a286564c5b
   mdl (0.18.1) sha256=14c7ab8264bbeac4010bd54adb5d125cf1d29b3848c3b6bfacb239b8bc70037a
+  mini_magick (5.4.0) sha256=f120af581d9ed4ec52c57f35a67a605d112bb1d8f582d1415b147fda42d11d78
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
   minitest (6.0.6) sha256=153ea36d1d987a62942382b61075745042a2b3123b1cd48f4c3675af9cc7d6f1
   mixlib-cli (2.1.8) sha256=e6f27be34d580f6ed71731ca46b967e57793a627131c1f6e1ed2dad39ea3bdf9

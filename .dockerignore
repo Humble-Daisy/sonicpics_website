@@ -49,3 +49,6 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# The Hot Cell image builds from its own directory; its edits must not bust this image's cache.
+/hotcell

@@ -1641,4 +1641,22 @@ RSpec.describe "Template invariants" do
         "(/docs/developer/getting-started, Rails comes from a pinned commit)"
     end
   end
+
+  describe "Hot Cell ships wired but off" do
+    it "names no Hot Cell class in any environment file" do
+      hits = Dir[root.join("config/environments/*.rb")].select { |file| File.read(file).match?(/HotCell/) }
+
+      expect(hits).to be_empty,
+        "the Hot Cell flip lives only in config/initializers/hotcell.rb, keyed on the cell being enabled: #{hits.join(", ")}"
+      expect(File.read(root.join("config/initializers/hotcell.rb"))).to include('HotCell.register "active_storage"')
+    end
+
+    it "loads the client everywhere and the server only in test" do
+      gemfile = File.read(root.join("Gemfile"))
+
+      expect(gemfile).to match(/^gem "activestorage-hotcell-client"/)
+      expect(gemfile[/^group :test do(.*?)^end/m, 1]).to include('gem "activestorage-hotcell-server", require: false'),
+        "the cell's gems belong in the test group only, for the proving spec; the production image installs without it"
+    end
+  end
 end
