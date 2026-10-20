@@ -171,7 +171,7 @@ jobs:
         timeout-minutes: 5
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libvips42t64
+          sudo apt-get install -y --no-install-recommends libvips42t64 libheif-plugin-libde265
 
       - name: Verify Chrome is available (Cuprite/ferrum connects to the runner's pre-installed browser)
         # No install step: ubuntu-latest ships Google Chrome pre-installed and
