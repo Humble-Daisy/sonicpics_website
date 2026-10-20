@@ -32,6 +32,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Changed
 
+- The attachment guard accepts only validators known to leave an upload's bytes alone, so a new decoding validator (`pages:`, `duration:`, spoofing protection) fails it until someone has checked it.
 - A variant whose processing fails answers its image request with a cacheable placeholder, or a 503 with `no-store` when the failure is transient, instead of a 500.
 - The pre-push bundler-audit updates the advisory database before it checks, as CI's fresh clone does, so a new advisory fails the push instead of only CI; it needs the network.
 - A member's **Deactivate** asks for confirmation and says what they lose: workspace access now, and their project memberships, which Reactivate does not restore.
