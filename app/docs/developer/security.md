@@ -509,6 +509,8 @@ These rows are retained on their own floor (`ActivityLogRetentionSweepJob::SECUR
 
 ### Image Processing (Active Storage + libvips)
 
+A fork can move this decoding out of the app process entirely, into a Hot Cell sandbox that ships wired but off: see [Hot Cell](/docs/developer/hot-cell). What follows describes the default, in-process path.
+
 Active Storage processes variants with libvips (`variant_processor = :vips`, the Rails 8.1 default). Since Rails 8.1.3.1 it calls `Vips.block_untrusted(true)` while booting, disabling the loaders and savers libvips flags as unsafe for untrusted input. That is what closes CVE-2026-66066, where a crafted upload could be used to read arbitrary files from the server — including the process environment, and therefore `secret_key_base`.
 
 Two consequences to know about:

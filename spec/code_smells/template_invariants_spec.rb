@@ -1754,6 +1754,27 @@ RSpec.describe "Template invariants" do
         "and the cell requires nothing the app never calls (/docs/developer/hot-cell)"
     end
 
+    it "the Hot Cell docs sample keeps every volume deploy.yml already mounts" do
+      doc = File.read(root.join("app/docs/developer/hot-cell.md"))
+      sample = doc.scan(/^ *```yaml\n(.*?)^ *```/m).flatten.find { |block| block.include?("accessories:") }
+      existing = YAML.safe_load(File.read(root.join("config/deploy.yml")), aliases: true, permitted_classes: [ Symbol ])["volumes"]
+
+      expect(sample).to be_present
+      expect(YAML.safe_load(sample.gsub(/^ {3}/, ""), aliases: true)["volumes"]).to include(*existing),
+        "a YAML key listed twice keeps only the last value, so a copied sample without #{existing.inspect} drops " \
+        "the app's SQLite and Active Storage volume"
+    end
+
+    it "the Hot Cell docs sample's gid is the cell image's user" do
+      gid = File.read(root.join("hotcell/Dockerfile"))[/groupadd --gid (\d+)/, 1]
+      doc = File.read(root.join("app/docs/developer/hot-cell.md"))
+
+      expect(gid).to be_present
+      expect(doc).to include(%(HOTCELL_GROUP: "#{gid}"), "group-add: #{gid}", %(user: "#{gid}:#{gid}")),
+        "the app's group-add, HOTCELL_GROUP and the accessory's user must all be the cell image's gid (#{gid}), " \
+        "or every conversion fails with EPERM after deploy"
+    end
+
     it "the cell answers before the app stops waiting" do
       keywords = lambda do |source, method|
         stack = [ Prism.parse(source).value ]

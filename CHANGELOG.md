@@ -9,6 +9,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 - Hot Cell for Active Storage ships wired but off: set `HOTCELL_ROOT` and run the cell to sandbox image processing; nothing changes until a fork does.
 - `hotcell/` is the Hot Cell image: libvips only, built pre-push and scanned in CI when it changes, locked to the app's Hot Cell version.
 - A spec boots a real Hot Cell and proves every allowed image type thumbnails through it, and that broken bytes and an unreachable cell are classified as permanent and transient.
+- `/docs/developer/hot-cell` is the flip recipe: build and push the cell image, add the accessory, set two variables, verify before and after.
 - A code-smell guard requires a content-type and size validation on every attachment and forbids validators that decode the upload in the app process.
 - A project resource's page offers **Delete**, behind a confirmation, to its author, the project's creator and the workspace's owners; its notice now says the resource was deleted rather than archived.
 - A code-smell spec follows every DELETE in the templates through the partials that pass its URL, and fails when one lands on a route with no destroy, or discards a record without going through the confirm dialog — so a control can no longer point Remove at a parent record's destroy (#1402).

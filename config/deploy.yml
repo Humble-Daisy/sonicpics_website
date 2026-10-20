@@ -149,6 +149,9 @@ builder:
 # ssh:
 #   user: app
 
+# Hot Cell (sandboxed image processing) is an accessory too, shipped off; its full block, the
+# group-add, volume and env lines, and the order to boot them in: /docs/developer/hot-cell.
+
 # Use accessory services (secrets come from .kamal/secrets).
 # accessories:
 #   db:

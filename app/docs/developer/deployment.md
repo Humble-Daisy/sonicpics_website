@@ -221,6 +221,8 @@ The template ships `SOLID_QUEUE_IN_PUMA: true` in `deploy.yml` env. This runs th
 
 When you outgrow this default — typically when you add a second web server, or when sustained job volume exceeds ~10 jobs/sec — follow these four steps **in order**:
 
+(The other accessory the template knows is the Hot Cell image-processing sandbox, which runs on the same host as the app and is independent of this checklist: [Hot Cell](/docs/developer/hot-cell).)
+
 1. **Add a database accessory.** Uncomment the `accessories:` block at the bottom of `config/deploy.yml` (it ships with a MySQL template — adapt to Postgres or your preferred DB). Migrate your SQLite data to the new database.
 
 2. **Set `DB_HOST` in `env.clear`.** Point Active Record at the accessory's internal Kamal network address.

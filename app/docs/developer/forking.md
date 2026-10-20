@@ -331,6 +331,7 @@ These constants are yours to change and are **not** merge-frozen: an upstream ch
 - `NotificationPreferences::DEFAULT_RETENTION_DAYS` — the fallback for a row whose `retention_days` key is absent; the column default in `db/schema.rb` is what a new user actually gets — change both, or the column default wins
 - `NotificationPreferences::NEVER_CAP_DAYS` — what a pre-PR-5 "Never" choice reads as
 - `ActivityLogRetentionSweepJob::SECURITY_RETENTION_FLOOR` — how long credential-event audit rows are kept, regardless of the general window
+- `hotcell/config.rb` and the Hot Cell accessory's `cpus`/`memory` — the sandbox's limits, sized to your host ([Hot Cell](/docs/developer/hot-cell), Tune it)
 
 ### How the merge driver actually behaves
 
