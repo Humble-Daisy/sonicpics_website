@@ -6,6 +6,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Added
 
+- A code-smell guard requires a content-type and size validation on every attachment and forbids validators that decode the upload in the app process.
 - A project resource's page offers **Delete**, behind a confirmation, to its author, the project's creator and the workspace's owners; its notice now says the resource was deleted rather than archived.
 - A code-smell spec follows every DELETE in the templates through the partials that pass its URL, and fails when one lands on a route with no destroy, or discards a record without going through the confirm dialog — so a control can no longer point Remove at a parent record's destroy (#1402).
 - The Herb check also covers the 289 Lookbook previews, the Turbo Stream templates (compiled through Herb although Rails still uses Erubi for that format) and the static pages in `public/`, each with a floor.

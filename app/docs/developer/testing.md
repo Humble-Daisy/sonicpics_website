@@ -72,6 +72,10 @@ So the guard reads every request a template can make (`button_to`, `link_to`, `f
 
 When it fires, the message names the whole render chain, outermost template first, so the place to look is usually the first template in it: that is where the URL was chosen. Point the control at the child resource it names, or put the destroy behind the confirm dialog. The guard reads template text, so it has blind spots, and it prints them whenever a rule fails: collection renders (`render partial:`), URLs built in Ruby, hand-written HTML method overrides, partials nothing renders, and a destroy that changes a record it did not load with `find`. Its negative controls replay #1402 on the Profile page and strip Leave's `turbo_confirm`, and both must keep failing.
 
+### Attachments are validated
+
+`spec/code_smells/attachments_are_validated_spec.rb` reads every `has_one_attached` and `has_many_attached` under `app/models`, concerns and the block form included, and requires a `content_type:` and a `size:` validation on each. It also refuses `active_storage_validations`' `dimension:`, `aspect_ratio:` and `processable_file:`: those open the upload with libvips in the app process to check it, which is the decoding Active Storage's image processing exists to keep away from the app. Uploads attached through rich text are not model attachments; `DirectUploadsController` gates their type and size instead.
+
 ### The two i18n gates
 
 Two complementary gates cover missing translations, and it is worth being precise about which covers what:
