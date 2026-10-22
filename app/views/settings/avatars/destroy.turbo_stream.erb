@@ -1,11 +1,9 @@
 <%= turbo_stream.replace "user_avatar_profile" do %>
-  <span id="user_avatar_profile">
-    <%= avatar_for(Current.user, size: :xl) %>
-  </span>
+  <%= render "settings/profiles/avatar", user: Current.user %>
 <% end %>
 
 <%= turbo_stream.replace "user_avatar_header" do %>
-  <span id="user_avatar_header"><%= avatar_for(Current.user, size: :md) %></span>
+  <%= render "shared/user_avatar_header", user: Current.user, summary: unread_notification_summary(Current.user) %>
 <% end %>
 
 <%= turbo_stream.append "modal-body" do %>

@@ -458,5 +458,40 @@ RSpec.describe "Account Avatars", type: :request do
         expect(user.avatar_original).not_to be_attached
       end
     end
+
+    describe "the avatars a stream swaps in match the ones on the page" do
+      let(:stream_headers) { { "Accept" => "text/vnd.turbo-stream.html" } }
+      let(:replacement) do
+        lambda do |target|
+          template = response.body[%r{<turbo-stream action="replace" target="#{target}"><template>(.*?)</template></turbo-stream>}m, 1]
+          Capybara.string(template.to_s).find("##{target}", visible: :all)
+        end
+      end
+
+      before do
+        user.avatar.attach(fixture_file_upload("avatar.png", "image/png"))
+        user.update!(avatar_source: "upload")
+        PasswordChangedNotifier.with(record: user).deliver(user)
+      end
+
+      it "keeps the header's notification dot when a photo is chosen", :aggregate_failures do
+        patch settings_avatar_path, params: { avatar_source: "initials" }, headers: stream_headers
+
+        header = replacement.call("user_avatar_header")
+        expect(header[:class]).to include("relative").and include("inline-flex")
+        expect(header).to have_css("turbo-frame#notifications_indicator_avatar [data-severity='danger']", visible: :all)
+      end
+
+      it "keeps the header's notification dot and the profile's pencil when the photo is removed", :aggregate_failures do
+        delete settings_avatar_path, headers: stream_headers
+
+        header = replacement.call("user_avatar_header")
+        expect(header[:class]).to include("relative").and include("inline-flex")
+        expect(header).to have_css("turbo-frame#notifications_indicator_avatar [data-severity='danger']", visible: :all)
+        profile = replacement.call("user_avatar_profile")
+        expect(profile[:class]).to include("relative")
+        expect(profile).to have_css("svg", visible: :all)
+      end
+    end
   end
 end

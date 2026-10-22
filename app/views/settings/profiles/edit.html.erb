@@ -11,14 +11,7 @@
             type="button"
             class="shrink-0 rounded-full focus-ring cursor-pointer group"
             aria-label="<%= t('settings.avatars.edit.change_aria_label', initials: @user.identity.initials) %>">
-      <span id="user_avatar_profile" class="block relative">
-        <%= avatar_for(@user, size: :xl) %>
-        <span class="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/20
-                     transition-colors flex items-center justify-center">
-          <%= icon(:pencil, size: :md,
-                class: "text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md") %>
-        </span>
-      </span>
+      <%= render "settings/profiles/avatar", user: @user %>
     </button>
 
     <div>

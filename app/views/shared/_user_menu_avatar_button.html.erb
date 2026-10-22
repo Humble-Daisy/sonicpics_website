@@ -13,12 +13,7 @@
                text-on-chrome
                focus-ring-chrome
                cursor-pointer">
-  <span id="user_avatar_header" class="relative inline-flex">
-    <%= avatar_for(user, size: :md) %>
-    <turbo-frame id="notifications_indicator_avatar">
-      <%= render "shared/notifications_indicator", summary: summary, surface: :avatar %>
-    </turbo-frame>
-  </span>
+  <%= render "shared/user_avatar_header", user: user, summary: summary %>
   <%= icon(:chevron_down, size: :sm,
         data: { test: "user-menu-chevron" },
         class: "text-on-chrome-muted") %>

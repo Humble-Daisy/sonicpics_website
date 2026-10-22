@@ -1,0 +1,7 @@
+<%# locals: (user:, summary:) -%>
+<span id="user_avatar_header" class="relative inline-flex">
+  <%= avatar_for(user, size: :md) %>
+  <turbo-frame id="notifications_indicator_avatar">
+    <%= render "shared/notifications_indicator", summary: summary, surface: :avatar %>
+  </turbo-frame>
+</span>
