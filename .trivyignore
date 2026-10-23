@@ -21,3 +21,10 @@ CVE-2026-33210
 CVE-2026-78667
 CVE-2026-78669
 CVE-2026-97031
+
+# Same binary, one more stdlib finding: crypto/x509 man-in-the-middle via a
+# compromised intermediate (GO-2026-6809), fixed in Go 1.27.3. Thruster's main
+# moved to 1.27.3 on 2026-10-23 (basecamp/thruster#161), so the fix exists and
+# only awaits a release; the gem's prebuilt binary cannot be rebuilt from here.
+# Revisit: on the thruster release that carries #161 (> 0.1.27), or 2026-11-15.
+CVE-2026-111943
