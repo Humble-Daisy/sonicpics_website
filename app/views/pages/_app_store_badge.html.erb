@@ -1,0 +1,9 @@
+<%= link_to t("pages.home.app_store_url"),
+      target: "_blank",
+      rel: "noopener noreferrer",
+      class: "inline-flex shrink-0 self-start sm:self-auto rounded focus-ring" do %>
+  <%= image_tag "sonicpics/AppStoreBadge.png",
+        alt: t("pages.home.hero.cta_primary"),
+        class: "h-13 w-auto" %>
+  <span class="sr-only"><%= t("pages.external.new_tab") %></span>
+<% end %>

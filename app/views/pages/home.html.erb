@@ -1,45 +1,35 @@
 <% content_for(:title) { t("pages.home.hero.title") } %>
 
-<section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 text-center">
-  <%= image_tag "sonicpics/SonicPicsV2.png",
-        alt: "",
-        class: "mx-auto h-16 w-auto" %>
-  <h1 class="mt-8 text-4xl sm:text-5xl font-bold text-text-heading tracking-tight">
-    <%= t("pages.home.hero.title") %>
-  </h1>
-  <p class="mt-6 text-lg sm:text-xl text-text-muted max-w-2xl mx-auto">
-    <%= t("pages.home.hero.subtitle") %>
-  </p>
-  <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-    <%= link_to t("pages.home.app_store_url"),
-          target: "_blank",
-          rel: "noopener noreferrer",
-          class: "inline-flex rounded focus-ring" do %>
-      <%= image_tag "sonicpics/AppStoreBadge.png",
-            alt: t("pages.home.hero.cta_primary"),
-            class: "h-14 w-auto" %>
-      <span class="sr-only"><%= t("pages.external.new_tab") %></span>
-    <% end %>
-    <%= link_to t("pages.home.hero.cta_secondary"), page_path(:sample_uses),
-          class: "btn-outline-primary px-6 py-3 text-lg whitespace-nowrap w-full max-w-xs sm:w-auto sm:max-w-none" %>
-    <% if authenticated? %>
-      <%= link_to t("pages.home.hero.cta_signed_in"), workspaces_path,
-            class: "btn-primary px-6 py-3 text-lg whitespace-nowrap w-full max-w-xs sm:w-auto sm:max-w-none" %>
-    <% end %>
-  </div>
-</section>
-
-<section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10" aria-label="<%= t("pages.home.carousel.label") %>">
-  <%= ui(:carousel, label: t("pages.home.carousel.label"), autoplay: 8000, class: "rounded-xl") do |carousel| %>
-    <% carousel.with_slide do %>
-      <%= image_tag "sonicpics/banner_museum.jpg",
-            alt: t("pages.home.carousel.museum_alt"),
-            class: "w-full max-h-[32rem] object-cover" %>
-    <% end %>
-    <% carousel.with_slide do %>
-      <%= image_tag "sonicpics/banner_boygrass.jpg",
-            alt: t("pages.home.carousel.grass_alt"),
-            class: "w-full max-h-[32rem] object-cover" %>
+<%# Photo first, as on the original: each slide carries its own caption and
+    App Store badge on an opaque band along the photo's foot (axe wants an
+    opaque plate under any control laid over media). Slide one's caption is the page's h1;
+    inactive slides only slide out of view, so it stays in the outline. The
+    caption's right padding clears the carousel's pause button. %>
+<section class="max-w-6xl mx-auto sm:px-6 lg:px-8 sm:pt-6" aria-label="<%= t("pages.home.carousel.label") %>">
+  <%= ui(:carousel, label: t("pages.home.carousel.label"), autoplay: 8000, class: "sm:rounded-xl") do |carousel| %>
+    <% [
+         { image: "banner_museum.jpg", alt: t("pages.home.carousel.museum_alt"), tag: :h1,
+           title: t("pages.home.hero.title"), subtitle: t("pages.home.hero.subtitle") },
+         { image: "banner_boygrass.jpg", alt: t("pages.home.carousel.grass_alt"), tag: :p,
+           title: t("pages.home.carousel.grass_title"), subtitle: t("pages.home.carousel.grass_subtitle") }
+       ].each do |slide| %>
+      <% carousel.with_slide do %>
+        <div class="relative">
+          <%= image_tag "sonicpics/#{slide[:image]}",
+                alt: slide[:alt],
+                class: "w-full h-80 sm:h-[32rem] object-cover" %>
+          <div class="absolute inset-x-0 bottom-0 bg-neutral-900 text-white
+                      px-4 sm:px-8 pt-4 pb-16 sm:pb-6 sm:pr-20
+                      flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div class="max-w-2xl">
+              <%= content_tag slide[:tag], slide[:title],
+                    class: "text-2xl sm:text-4xl font-bold tracking-tight" %>
+              <p class="mt-2 sm:text-lg text-neutral-100"><%= slide[:subtitle] %></p>
+            </div>
+            <%= render "pages/app_store_badge" %>
+          </div>
+        </div>
+      <% end %>
     <% end %>
   <% end %>
 </section>
@@ -144,24 +134,13 @@
 <% end %>
 </div>
 
-<%= render "shared/section", bg: "bg-surface" do %>
-  <div class="text-center">
-    <h2 class="text-3xl font-bold text-text-heading">
-      <%= authenticated? ? t("pages.home.cta.signed_in.title") : t("pages.home.cta.title") %>
-    </h2>
-    <p class="mt-4 text-lg text-text-muted">
-      <%= authenticated? ? t("pages.home.cta.signed_in.subtitle") : t("pages.home.cta.subtitle") %>
-    </p>
-    <% if authenticated? %>
-      <div class="mt-8">
-        <%= link_to t("pages.home.cta.signed_in.button"), workspaces_path,
-              class: "btn-primary px-6 py-3 text-lg" %>
-      </div>
-    <% elsif signups_open? %>
-      <div class="mt-8">
-        <%= link_to t("pages.home.cta.button"), new_session_path,
-              class: "btn-primary px-6 py-3 text-lg" %>
-      </div>
-    <% end %>
+<section class="bg-pink-900">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12
+              flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+    <div>
+      <h2 class="text-3xl font-bold text-white"><%= t("pages.home.cta.title") %></h2>
+      <p class="mt-2 text-lg text-pink-50"><%= t("pages.home.cta.subtitle") %></p>
+    </div>
+    <%= render "pages/app_store_badge" %>
   </div>
-<% end %>
+</section>

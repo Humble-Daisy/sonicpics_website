@@ -2,17 +2,25 @@ en:
   pages:
     external:
       new_tab: "Opens in a new tab"
+    chrome:
+      home: "SonicPics home"
+      contact: "Contact"
+      support: "Support"
+      privacy: "Privacy statement"
+      back_to_top: "Back to top"
+      company: "Humble Daisy, Inc."
+      company_url: "https://www.humbledaisy.com"
     home:
       app_store_url: "https://itunes.apple.com/app/sonicpics/id345295488?mt=8"
       hero:
         title: "Digital storytelling has never been easier."
         subtitle: "With SonicPics you can create, record, and share custom photo slideshows on an iPhone, iPod touch, or iPad."
         cta_primary: "Download on the App Store"
-        cta_signed_in: "Go to your workspaces"
-        cta_secondary: "Sample uses"
       carousel:
         label: "SonicPics stories"
         museum_alt: "My favorite part of our field trip to the museum was…"
+        grass_title: "The start of a storied career."
+        grass_subtitle: "Let them tell their story and they will share their world."
         grass_alt: "Just unlocked the Engaged Student badge with SonicPics!"
       highlights:
         view: "View details"
@@ -66,13 +74,8 @@ en:
         more_uses_alt: "Already found more uses for it than the one I originally downloaded it for."
         zillion_alt: "Easy to use and great for a zillion uses!"
       cta:
-        title: "Ready to tell a story?"
-        subtitle: "Get SonicPics on the App Store, or create an account for this site."
-        button: "Create your account"
-        signed_in:
-          title: "Welcome back"
-          subtitle: "Pick up where you left off. Your workspaces are waiting."
-          button: "Go to your workspaces"
+        title: "Start telling your story."
+        subtitle: "SonicPics runs on iPhone, iPod touch, and iPad."
     about:
       hero:
         title: "About SonicPics"

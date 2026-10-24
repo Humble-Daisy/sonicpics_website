@@ -25,7 +25,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     before { allow(Rails.env).to receive(:development?).and_return(true) }
 
     it "renders the trigger in the footer with the Normal mode label" do
-      visit root_path
+      visit new_session_path
       within("footer") do
         expect(page).to have_content(I18n.t("a11y_sim.dev_badge"))
         expect(page).to have_content(I18n.t("a11y_sim.prefix"))
@@ -34,7 +34,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "opens the menu when the trigger is clicked" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       trigger_button.click
       expect(page).to have_css("[role='menu']:not(.hidden)")
@@ -44,7 +44,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "applies the matching body class when a mode is selected" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       trigger_button.click
       mode_item(:blur).click
@@ -57,7 +57,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     # the DOM (so the CSS `filter: url(#...)` resolves) AND applies its body class.
     %i[protanopia tritanopia achromatopsia].each do |cvd|
       it "provides the #{cvd} color-vision filter (SVG matrix def + body class)" do
-        visit root_path
+        visit new_session_path
         dismiss_cookie_banner
         expect(page).to have_css("filter#a11y-sim-#{cvd}", visible: :all)
         trigger_button.click
@@ -67,7 +67,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "reveals a description tooltip on hover, wired via aria-describedby" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       trigger_button.click
       item = mode_item(:protanopia)
@@ -77,7 +77,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "closes the menu and clears the body class when returning to Normal" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       trigger_button.click
       mode_item(:deuteranopia).click
@@ -90,7 +90,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "announces the selected mode to screen readers via an aria-live region" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       trigger_button.click
       mode_item(:grayscale).click
@@ -100,7 +100,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "toggles the menu via the Ctrl/Cmd+Shift+A keyboard shortcut" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       expect(page).to have_css("[role='menu'].hidden", visible: :all)
 
@@ -111,7 +111,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "falls back to Normal when asked to apply an invalid mode" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       # Simulate a corrupted localStorage value, then ask the controller to re-apply.
       page.execute_script(<<~JS)
@@ -123,7 +123,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
     end
 
     it "still applies filters when localStorage.setItem throws" do
-      visit root_path
+      visit new_session_path
       dismiss_cookie_banner
       # Override setItem to throw, simulating Safari private-browsing quota error.
       page.execute_script(<<~JS)
@@ -140,7 +140,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
 
     describe "keyboard navigation" do
       it "moves focus to the next item on ArrowDown" do
-        visit root_path
+        visit new_session_path
         dismiss_cookie_banner
         trigger_button.click
         press_key("ArrowDown")
@@ -148,7 +148,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
       end
 
       it "wraps focus to the last item when ArrowUp is pressed from the first item" do
-        visit root_path
+        visit new_session_path
         dismiss_cookie_banner
         trigger_button.click
         press_key("ArrowUp")
@@ -156,7 +156,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
       end
 
       it "jumps focus to the last item on End and first item on Home" do
-        visit root_path
+        visit new_session_path
         dismiss_cookie_banner
         trigger_button.click
         press_key("End")
@@ -166,7 +166,7 @@ RSpec.describe "Accessibility simulation drop-up", type: :system do
       end
 
       it "closes the menu when Tab is pressed" do
-        visit root_path
+        visit new_session_path
         dismiss_cookie_banner
         trigger_button.click
         expect(page).to have_css("[role='menu']:not(.hidden)")

@@ -28,7 +28,7 @@ RSpec.describe "Static pages", type: :system do
     end
 
     it "displays the site logo SVG in the header" do
-      visit root_path
+      visit new_session_path
       within("header nav") do
         expect(page).to have_css("svg[aria-hidden='true']")
       end
@@ -40,7 +40,7 @@ RSpec.describe "Static pages", type: :system do
     end
 
     it "footer contains site links" do
-      visit root_path
+      visit new_session_path
       within("footer") do
         expect(page).to have_link(I18n.t("footer.about"))
         expect(page).to have_link(I18n.t("footer.privacy"))
@@ -49,7 +49,7 @@ RSpec.describe "Static pages", type: :system do
     end
 
     it "displays the site logo in the footer" do
-      visit root_path
+      visit new_session_path
       within("footer") do
         expect(page).to have_css("svg[aria-hidden='true']")
         expect(page).to have_text(I18n.t("application.name"))
@@ -64,14 +64,14 @@ RSpec.describe "Static pages", type: :system do
     end
 
     it "has a theme toggle button" do
-      visit root_path
+      visit new_session_path
       within("header nav") do
         expect(page).to have_css("button[aria-label]", text: /Light|Dark|System/i, visible: :all)
       end
     end
 
     it "has a mobile menu toggle button" do
-      visit root_path
+      visit new_session_path
       expect(page).to have_button(I18n.t("navigation.mobile_menu.open"), visible: :all)
     end
 
@@ -123,7 +123,7 @@ RSpec.describe "Static pages", type: :system do
     end
 
     def choose_theme(*cycle_stops)
-      visit root_path
+      visit new_session_path
       cycle_stops.each { find("[data-controller='theme-toggle']").click }
     end
 
@@ -132,7 +132,7 @@ RSpec.describe "Static pages", type: :system do
       expect(page).to have_css("html.dark")
 
       recording_when_dark_first_appears do
-        visit root_path
+        visit new_session_path
         expect(page).to have_css("html[data-theme-theme-value='dark']")
         expect(page).to have_css("html.dark")
         expect(dark_first_appeared_at).to eq("loading")
@@ -144,7 +144,7 @@ RSpec.describe "Static pages", type: :system do
       expect(page).to have_css("html[data-theme-theme-value='light']")
 
       recording_when_dark_first_appears do
-        visit root_path
+        visit new_session_path
         expect(page).to have_css("html[data-theme-theme-value='light']")
         expect(page).to have_no_css("html.dark")
         expect(dark_first_appeared_at).to be_nil
@@ -154,7 +154,7 @@ RSpec.describe "Static pages", type: :system do
     it "paints dark before the modules run when the preference is system and the OS prefers dark" do
       with_os_preferring("dark") do
         recording_when_dark_first_appears do
-          visit root_path
+          visit new_session_path
           expect(page).to have_css("html.dark")
           expect(dark_first_appeared_at).to eq("loading")
         end
@@ -173,11 +173,11 @@ RSpec.describe "Static pages", type: :system do
       expect(page).to have_text(I18n.t("pages.home.hero.subtitle"))
     end
 
-    it "has call-to-action buttons when signups are open" do
+    it "links to the App Store rather than to sign-up, even when signups are open" do
       allow(Rails.configuration.x.signup).to receive(:mode).and_return(:open)
       visit root_path
       expect(page).to have_link(I18n.t("pages.home.hero.cta_primary"))
-      expect(page).to have_link(I18n.t("pages.home.hero.cta_secondary"))
+      expect(page).to have_no_link(I18n.t("navigation.sign_up"))
     end
 
     it "displays feature cards" do

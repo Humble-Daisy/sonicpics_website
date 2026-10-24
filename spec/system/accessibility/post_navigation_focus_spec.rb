@@ -12,7 +12,7 @@ require "rails_helper"
 RSpec.describe "Post-navigation focus management", type: :system do
   it "moves focus to #main-content after a Turbo Drive navigation" do
     visit "/"
-    click_link I18n.t("footer.about") # destination has no autofocused field
+    within("header") { click_link I18n.t("pages.chrome.support") } # destination has no autofocused field
 
     # :focus predicate (Capybara-retried), not element presence + an
     # activeElement sample: every layout renders #main-content, so presence
@@ -31,8 +31,11 @@ RSpec.describe "Post-navigation focus management", type: :system do
   it "does not fight an autofocused field on the destination page" do
     # The login page's email field autofocuses; the handler must yield to it
     # rather than yank focus onto the landmark.
-    visit "/"
-    click_link I18n.t("navigation.sign_in")
+    # The brochure pages link nowhere into accounts, so the Turbo visit starts
+    # in the app chrome, whose Sign up link leads to the login page.
+    allow(Rails.configuration.x.signup).to receive(:mode).and_return(:open)
+    visit new_session_path
+    within("header") { click_link I18n.t("navigation.sign_up") }
 
     # :focus predicate (Capybara-retried) — synchronizing on element presence
     # and then sampling activeElement raced the turbo:load focus handler on
