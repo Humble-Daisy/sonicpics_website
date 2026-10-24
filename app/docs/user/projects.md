@@ -99,6 +99,12 @@ Resources have a `position` field (integer, >= 0) and can be reordered:
 
 The `positioned` scope orders by position ascending.
 
+### Deleting a Resource
+
+A resource's page offers **Delete** to the people who may remove it: the person who wrote it, the project's creator, and the workspace's owners when they are members of the project. An owner can delete a resource they cannot edit, which is why the control sits on the resource's page rather than its edit page. Delete asks for confirmation first; a deleted resource leaves the project for everyone and is not listed anywhere afterwards, so the dialog says it can't be undone.
+
+**Route:** `DELETE /workspaces/:slug/projects/:slug/resources/:id` (`Workspaces::Projects::ResourcesController#destroy`)
+
 ### Adding New Resource Types
 
 See the [Extending](/docs/developer/extending) guide for how to add new resource types via the polymorphic pattern.

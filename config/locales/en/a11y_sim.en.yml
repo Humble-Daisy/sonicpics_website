@@ -3,7 +3,6 @@ en:
     dev_badge: "DEV"
     prefix: "A11y:"
     heading: "A11y simulation"
-    trigger_aria_label: "Toggle accessibility-simulation menu (development only)"
     menu_aria_label: "Accessibility-simulation modes"
     footer_hint: "Esc to close · 0–8 to jump"
     announcement_template: "Accessibility filter: %{mode}"

@@ -82,15 +82,8 @@ RSpec.describe Role, type: :model do
   end
 
   describe "global role uniqueness (workspace_id IS NULL)" do
-    # The composite unique index on (workspace_id, slug) does not constrain
-    # rows with a NULL workspace_id — NULL is distinct in unique indexes on
-    # SQLite, Postgres, and MySQL alike. The partial unique index on
-    # slug WHERE workspace_id IS NULL is the real invariant; this spec guards
-    # against it being dropped and global-role uniqueness silently degrading
-    # to app-validation-only (which find_or_create_by! races straight past).
-    # find_or_create (not create): CI's db:prepare seeds the global roles and
-    # they survive into the suite, while a schema-reloaded local test DB starts
-    # empty — setup must hold in both states.
+    # The partial index on slug WHERE workspace_id IS NULL is the invariant (NULLs
+    # escape the composite index); find_or_create: the roles may be seeded — see #434.
     it "rejects a duplicate global slug at the database level" do
       Role.find_or_create_by!(slug: "owner", workspace_id: nil) { |r| r.name = "Owner" }
       duplicate = build(:role, slug: "owner", workspace: nil)

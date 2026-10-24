@@ -1,12 +1,7 @@
 require "rails_helper"
 
-# Regression guard for GHSA-xr9x-r78c-5hrm's breaking change. Action Text
-# attachments carry no content-type allowlist (unlike avatars and logos), so a
-# BMP/ICO/PSD can reach a document body. app/views/active_storage/blobs/_blob
-# .html.erb links the variant as an <img>; processing is lazy, so the page
-# itself still returns 200 and the Vips::Error lands on the representation
-# request — a broken image plus a 500 in the log on every view. Rendering the
-# file-chip branch instead is what keeps that off the page.
+# Action Text attachments have no content-type allowlist, so a BMP/ICO/PSD can reach a document body (GHSA-xr9x-r78c-5hrm).
+# Libvips refuses those types, so they render as a file chip and the page never asks for a variant it cannot make.
 RSpec.describe "Document with a blocked-loader attachment", type: :request do
   let(:workspace) { create(:workspace) }
   let(:user) { create(:user) }

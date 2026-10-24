@@ -1,6 +1,19 @@
 require "rails_helper"
 
 RSpec.describe SettingsNavigationHelper, type: :helper do
+  it "names every item with the words it shows (WCAG 2.5.3 Label in Name)" do
+    workspace = create(:workspace)
+    owner = create(:user)
+    create(:membership, :owner, user: owner, workspace: workspace)
+    allow(Current).to receive_messages(user: owner, workspace: workspace)
+    allow(helper).to receive(:current_page?).and_return(false)
+
+    items = helper.workspace_settings_nav_items + helper.identity_settings_nav_items
+    items.select { |item| item[:aria_label] }.each do |item|
+      expect(item[:aria_label]).to contain_visible_text(item[:label])
+    end
+  end
+
   describe "#workspace_settings_nav_items" do
     let(:workspace) { create(:workspace) }
     let(:owner) { create(:user) }

@@ -185,7 +185,7 @@ bin/kamal setup     # First-time only — installs Docker on the host
 bin/kamal deploy    # Subsequent deploys
 ```
 
-The `docker_build` CI job (see [Getting Started](/docs/developer/getting-started)) verifies your production image builds successfully on every PR, so the first time you run `kamal deploy` you're not also debugging Dockerfile issues.
+CI verifies your production image builds on every pull request that touches a build input (the `image_scan` workflow's cold build) and on every push to `main` (the `docker_build` workflow; see [Getting Started](/docs/developer/getting-started)), and the pre-push hook runs the same build locally when you change one, so the first time you run `kamal deploy` you're not also debugging Dockerfile issues.
 
 Once the app is up, mint the first instance operator — see [Instance operations: Day one](operations#day-one-on-an-invite-only-instance).
 
@@ -220,6 +220,8 @@ The template ships `SOLID_QUEUE_IN_PUMA: true` in `deploy.yml` env. This runs th
 ### Graduation checklist
 
 When you outgrow this default — typically when you add a second web server, or when sustained job volume exceeds ~10 jobs/sec — follow these four steps **in order**:
+
+(The other accessory the template knows is the Hot Cell image-processing sandbox, which runs on the same host as the app and is independent of this checklist: [Hot Cell](/docs/developer/hot-cell).)
 
 1. **Add a database accessory.** Uncomment the `accessories:` block at the bottom of `config/deploy.yml` (it ships with a MySQL template — adapt to Postgres or your preferred DB). Migrate your SQLite data to the new database.
 

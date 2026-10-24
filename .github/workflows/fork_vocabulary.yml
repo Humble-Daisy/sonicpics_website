@@ -38,7 +38,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1
+        uses: ruby/setup-ruby@824c0e29fdfc7d689c191c27acc969d2d04b7dd8 # v1
         with:
           bundler-cache: true
 
@@ -51,9 +51,6 @@ jobs:
       - name: Verify Chrome is available (Cuprite/ferrum connects to the runner's pre-installed browser)
         run: google-chrome --version || chromium-browser --version || chromium --version
 
-      - name: Prepare parallel test databases
-        run: bundle exec rake "parallel:rake[db:prepare]"
-
       - name: Set up gem source symlinks for Tailwind
         run: bundle exec rake tailwind:setup_gem_sources
 
@@ -62,12 +59,12 @@ jobs:
 
       - name: Run the suite under spec/fixtures/vocabulary.course.yml
         # Unsharded: no frozen split seed to download, and the merged coverage
-        # floor is enforced here rather than deferred to a coverage_merge job.
+        # floor is enforced here rather than deferred to ci.yml's test job.
         run: bin/parallel-rspec
 
       - name: Upload failure screenshots
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: fork-vocabulary-failures
           path: tmp/capybara

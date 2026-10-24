@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Pre-push gate, run by lefthook.yml only when a build input changed: the
+# production image must build. Verdict shape: conventions.md §Every machine verdict.
+class DockerBuildCheck
+  RULE = "a structural spec proves the Dockerfile's shape, never that the image builds — " \
+         "playbook standards/testing/checks-with-teeth.md §Structural checks; /docs/developer/deployment"
+
+  def run
+    daemon_available? || abort(<<~MSG)
+      DOCKER UNAVAILABLE  a build input changed and the Docker daemon is not reachable
+        fix: start Docker and push again
+        rule: #{RULE}
+    MSG
+
+    puts "==> Building the production image (a build input changed)"
+    system("docker", "build", "--tag", "modelrails_base:pre-push", ".") || abort(<<~MSG)
+      IMAGE BUILD FAILED  `docker build .` did not complete (output above)
+        fix: fix the Dockerfile or the input that broke it, rebuild locally, push again
+        rule: #{RULE}
+    MSG
+  end
+
+  def daemon_available?
+    system("docker", "info", out: File::NULL, err: File::NULL)
+  end
+end
+
+DockerBuildCheck.new.run if $PROGRAM_NAME == __FILE__

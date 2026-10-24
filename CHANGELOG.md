@@ -6,6 +6,13 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Added
 
+- Hot Cell for Active Storage ships wired but off: set `HOTCELL_ROOT` and run the cell to sandbox image processing; nothing changes until a fork does.
+- `hotcell/` is the Hot Cell image: libvips only, built pre-push and scanned in CI when it changes, locked to the app's Hot Cell version.
+- A spec boots a real Hot Cell and proves every allowed image type thumbnails through it, and that broken bytes and an unreachable cell are classified as permanent and transient.
+- `/docs/developer/hot-cell` is the flip recipe: build and push the cell image, add the accessory, set two variables, verify before and after.
+- A code-smell guard requires a content-type and size validation on every attachment and forbids validators that decode the upload in the app process.
+- A project resource's page offers **Delete**, behind a confirmation, to its author, the project's creator and the workspace's owners; its notice now says the resource was deleted rather than archived.
+- A code-smell spec follows every DELETE in the templates through the partials that pass its URL, and fails when one lands on a route with no destroy, or discards a record without going through the confirm dialog — so a control can no longer point Remove at a parent record's destroy (#1402).
 - The Herb check also covers the 289 Lookbook previews, the Turbo Stream templates (compiled through Herb although Rails still uses Erubi for that format) and the static pages in `public/`, each with a floor.
 - A code-smell spec compiles every HTML+ERB template through Herb on every pull request, so a mismatched tag or ERB output in attribute position fails the suite; the one gem template that fails today (#1341) is a reviewed exception the spec drops once it compiles.
 - `bin/rails action_text:clear_filename_alts` (with `DRY_RUN=1`) removes the file-name alt text Lexxy 0.9 wrote on uploaded images, so they open the ALT dialog empty; run it once on a deployment with pre-1.0 content. Lexxy's attachment toolbar and ALT-dialog buttons meet the 44px target floor, held by an AAA system spec. (#1339)
@@ -25,6 +32,17 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Changed
 
+- The attachment guard accepts only validators known to leave an upload's bytes alone, so a new decoding validator (`pages:`, `duration:`, spoofing protection) fails it until someone has checked it.
+- A variant whose processing fails answers its image request with a cacheable placeholder, or a 503 with `no-store` when the failure is transient, instead of a 500.
+- The pre-push bundler-audit updates the advisory database before it checks, as CI's fresh clone does, so a new advisory fails the push instead of only CI; it needs the network.
+- A member's **Deactivate** asks for confirmation and says what they lose: workspace access now, and their project memberships, which Reactivate does not restore.
+- The destroy-target guard counts a destroy that discards through a model method (`Membership#deactivate!`) and accepts `turbo_confirm` as the confirmation.
+- CI's `test` check is the coverage-merge job itself, which fails first unless every shard succeeded, so a run bills one job fewer; the required check keeps its name.
+- A pull request that changes a build input builds the production image once, in `image_scan`'s cold build, instead of twice; `docker_build` runs on every push to `main` and on pull requests only to test its own workflow.
+- Bullet 8.3.0 supports Active Record 8.2, so it loads like any other gem and the Rails-main load shim is gone (#1337, #1409).
+- Dependabot groups gem updates into one weekly pull request, as it already does for actions, so a week's bumps cost forks one CI run instead of one per gem (#1406).
+- CI's shard count and in-shard worker count come from the `CI_SHARDS` and `CI_WORKERS` repository variables (default 8 and 4), so a fork on a smaller or billed runner sets its own shape in Actions settings instead of editing the workflow (#1407).
+- The production image build is its own workflow: a pull request runs it only when a build input changes (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`) and every push to `main` runs it unfiltered; the pre-push hook runs the same build locally through `bin/docker-build-check` on the same inputs (#1405).
 - The timezone beacon renders only while a user's timezone is unset, so a Turbo visit no longer sends a PATCH; the passkey, identity-picker and beacon requests stop attaching an authenticity token that header-only CSRF never reads (#1351).
 - The sidebar spec moves the pointer off the rail before it checks the tooltip bubble is hidden, so a pointer left over the rail by an earlier spec can no longer hover the bubble in and fail it.
 - The identity picker specs wait for the hub to render, not only to load, so a late render can no longer save the default hue in place of the dragged one (#1344).
@@ -63,9 +81,24 @@ All notable changes to ModelRails are documented here, organized by phase.
 - Theme resolution defined once, in the pre-paint script (#624).
 - Operations users page is a paginated index (#1135).
 
+### Breaking
+
+- CI's four static jobs (`scan_ruby`, `scan_js`, `lint`, `lint_docs`) are one `static` job, so a pull request bills one runner minute for them instead of four, and each check still runs after an earlier one fails. A ruleset that required the four names must require `static` instead.
+
 ### Fixed
 
 - The image scan accepts thruster 0.1.26's Go 1.27.0 findings (CVE-2026-78667, CVE-2026-78669, CVE-2026-97031) until a gem built on Go 1.27.2 ships.
+- modelrails_ui is pinned to v0.25.0, whose time-picker, panel-height, text-size and Reduce Motion fixes the vendored components already carry.
+- Choosing or removing a photo keeps the header avatar's unread dot and the profile avatar's pencil: each avatar is one partial that the page and both streams render.
+- axe-core 4.14 enforces WCAG 2.5.3 Label in Name, and every control whose name left out the text it shows now leads with that text: the user menu, avatar and logo buttons name the initials, the settings nav, ledger filters, Allow again and the time picker carry their visible words, and Lexxy's ALT button is renamed by the host until basecamp/lexxy#1304 ships.
+- css_parser 3.3.0 (Lookbook's, development only) fixes GHSA-w3mx-4vv9-hjpg, a local-file read through `@import`, so bundler-audit passes again.
+- A password lock emails the holder (`NotificationMailer#password_locked`), as the security guide promised: `PasswordLockedNotifier` declared no email delivery, and security notifications never reach the digest, so a signed-out holder learned nothing. The notifications guide lists the notifier once, not twice.
+- `bin/rails action_text:clear_filename_alts` reloads each rich text under its write lock before cleaning it, so an edit saved while the task runs is no longer overwritten by the copy the task loaded earlier.
+- Removing an avatar or workspace logo, or switching it away from an upload, purges the two image files only after the save succeeds; a failed save (an invalid stored colour, say) used to delete both files and still report the old upload source.
+- The getting-started guide and `lefthook.yml` no longer advise skipping the hooks: a failing check is run on its own and fixed, since CI repeats every check anyway. `lefthook.yml` drops seven `skip_empty` settings that lefthook 2 ignores, so `lefthook validate` passes.
+- The README and the getting-started gate tables describe the pre-push hook's eight checks and when the image build runs; the workspaces guide names the Profile and logo routes instead of a `/branding` route that no longer exists.
+- **Remove photo on a workspace's logo removes the logo, not the workspace.** It sent `DELETE` to the workspace itself, which soft-deleted it; it now targets a logo endpoint that resets the logo to initials (#1402, #1412).
+- `bin/parallel-rspec` reloads the schema and seeds every worker database before the suite, so a pre-push run starts from the same global roles CI does instead of an empty table; CI's shards no longer prepare databases in a separate step (#1401).
 - Under Reduce Motion the sidebar no longer animates its width when it collapses (its labels still fade), and the rich-text editor's block caret stops blinking; the motion guard now reads `transition-[…]` lists (#1350).
 - A mail send that could not reach the SMTP server (connect timeout, refused connection, busy reply) retries for about seven minutes instead of losing the sign-in link, and `bin/deploy-guide` names the SMTP settings (#1349).
 - The rich-text editor takes a workspace's interactive colour (links, selection, the ALT dialog's Save) instead of the default brand blue, and the ALT dialog has a visible edge in dark mode with an outlined Cancel (#1348).
@@ -359,6 +392,7 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ### Security
 
+- Thruster 0.1.27; the image scan's accepted Go findings move to the three DoS CVEs in its go1.27.1 build (no fixed release exists), and the eight go1.26-era entries are retired (#1410).
 - **Blocking an inviter needs the signed link from the invitee's own invitation email** ([#951](https://github.com/dschmura/modelrails_base/issues/951)). Every invitation email gains a "Don't invite me again" link (signed, seven-day, query-string token) that opens a confirmation page; its button declines and blocks and states the outcome on the page. The decline page's block dialog and the bearer `POST /invitations/:token/block` route are gone, so nobody holding only the invitation URL can block. The inviter still never learns a block exists. `Invitation` also lost its delivery-suppression cluster to `Invitation::Suppression` (the split #915 asked for). Fork owners: templates that rendered the old dialog show the hint instead; anything linking to the removed route needs the email link.
 - **Workspace join links now expire seven days after creation or rotation.** Rotation also revokes an expired-but-unrevoked link, closing a `RecordNotUnique` on rotate. Fork note: every existing link expires one week after this migration runs unless rotated first — rotate from workspace settings ([#952](https://github.com/dschmura/modelrails_base/issues/952)).
 - **The app's cookies are classified once, next to Biscuit's consent categories.** `session_id`, Rails' own session cookie, `biscuit_consent`, `theme`, and `sidebar_collapsed` are all `necessary` and need no consent gate; a spec ties the classification to the security doc so a new cookie can't land in only one of the two ([#714](https://github.com/dschmura/modelrails_base/issues/714)).

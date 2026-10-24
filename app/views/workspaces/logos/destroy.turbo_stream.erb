@@ -1,0 +1,19 @@
+<%= turbo_stream.replace "workspace-switcher-button" do %>
+  <%= render "shared/workspace_switcher_trigger", workspace: @workspace %>
+<% end %>
+
+<%= turbo_stream.replace "workspace-switcher-button-mobile" do %>
+  <%= render "shared/workspace_switcher_trigger", workspace: @workspace, id_suffix: "-mobile" %>
+<% end %>
+
+<%= turbo_stream.replace "workspace_logo_branding" do %>
+  <%= render "workspaces/logo_branding", workspace: @workspace %>
+<% end %>
+
+<%= turbo_stream.append "modal-body" do %>
+  <div data-controller="modal-closer"></div>
+<% end %>
+
+<%= turbo_stream.append "toast-pills" do %>
+  <%= render "shared/toast_pill", type: :success, message: t("workspaces.logos.destroy.success") %>
+<% end %>

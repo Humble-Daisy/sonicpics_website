@@ -1,7 +1,7 @@
 require "spec_helper"
 require "yaml"
 
-# scan_js must fail closed yet tell a registry outage from an advisory (#984).
+# The importmap audit must fail closed yet tell a registry outage from an advisory (#984).
 # Enumerates every workflow running `bin/importmap audit` (#1041).
 RSpec.describe "every workflow running the JS advisory audit" do
   workflow_dir = File.expand_path("../../.github/workflows", __dir__)
@@ -17,8 +17,8 @@ RSpec.describe "every workflow running the JS advisory audit" do
 
   # POSITIVE CONTROL: naming the required gate means a broken parser cannot pass.
   it "finds the required per-PR gate among the audit sites" do
-    expect(audit_sites.map { |site| site[:label] }).to include("ci.yml / scan_js"),
-      "the workflow scan no longer sees ci.yml's scan_js job — with the enumeration " \
+    expect(audit_sites.map { |site| site[:label] }).to include("ci.yml / static"),
+      "the workflow scan no longer sees ci.yml's static job — with the enumeration " \
       "broken, every contract below would silently stop being checked. Found: " \
       "#{audit_sites.map { |site| site[:label] }.inspect}"
   end

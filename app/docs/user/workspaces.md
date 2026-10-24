@@ -58,7 +58,7 @@ Pick from the roles you're able to assign. You can only grant a role whose permi
 
 ### Deactivating a Member
 
-Deactivation is a **soft operation** — the membership is discarded (not destroyed), and the user is removed from all projects in that workspace. The last owner cannot be deactivated. Reactivating a member follows the same rule as changing a role: you can only restore a member to a role you could assign.
+Deactivation is a **soft operation** — the membership is discarded (not destroyed), and the user is removed from all projects in that workspace. **Deactivate** asks you to confirm first, and the dialog says what the member loses. The last owner cannot be deactivated. Reactivating a member follows the same rule as changing a role: you can only restore a member to a role you could assign.
 
 ### Reactivating a Member
 
@@ -157,7 +157,7 @@ A role is assignable only by someone who already holds every permission it confe
 
 ## Branding
 
-**Routes:** `/workspaces/:slug/branding`  
+**Routes:** the Profile page, `/workspaces/:slug/edit`, holds the name, logo and color, and saves to `PATCH /workspaces/:slug`. The logo picker loads from `GET /workspaces/:slug/logo`, and **Remove photo** sends `DELETE /workspaces/:slug/logo`, which puts the logo back to initials.  
 **Permission:** `manage_settings` (Owner, Admin)
 
 ### Logo Sources

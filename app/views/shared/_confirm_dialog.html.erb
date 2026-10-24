@@ -53,11 +53,11 @@
       <button data-action="click->modal#close" class="btn-secondary">
         <%= cancel_label %>
       </button>
-      <%# turbo_submits_with disables the button during submission (double-submit
-          belt; the model-level idempotency guard is the suspender). Text stays
-          the same — the disable is the point. %>
+      <%# turbo_submits_with disables the button while it submits (the model's idempotency guard is the backstop);
+          _top lets a dialog inside a Turbo frame, like the members table, still show the redirect's flash (#1050). %>
       <%= button_to confirm_text, confirm_url, method: confirm_method, class: confirm_class,
             disabled: confirm_input.present?,
+            form: { data: { turbo_frame: "_top" } },
             data: { turbo_submits_with: confirm_text }.merge(confirm_input ? { confirm_input_target: "button" } : {}) %>
     </div>
   <% end %>

@@ -22,6 +22,10 @@ The identity picker is a two-view component:
 | `identity-picker` | Orchestrates hub/crop switching, file upload, save |
 | `image-cropper` | Zoom, pan, keyboard navigation, crop coordinates |
 
+### Saving a change
+
+`Identity#apply` saves once, so the attachments, source, colour and (for a workspace) name all land or none do. It assigns attachments rather than calling `attach` on the persisted model, which would save midway. Switching away from the upload source purges both attachments permanently, and only after that save succeeds. Blank values count as absent, except a workspace `name`: a submitted blank rename fails validation instead of being ignored.
+
 ## User Avatars
 
 **Sources:** upload, gravatar, initials
@@ -41,7 +45,7 @@ Two Active Storage attachments per user:
 
 Crop coordinates are stored in the `avatar_original` blob's metadata so the crop can be restored when re-editing.
 
-When switching away from the upload source, both attachments are purged to save storage.
+When switching away from the upload source, both attachments are purged to save storage, after the save succeeds: a failed save keeps both.
 
 ### Accepted Formats
 
@@ -102,4 +106,6 @@ When a user re-opens the crop view for an existing upload, the original (uncropp
 
 ## Removing an Image
 
-The delete action (`DELETE /account/avatar` or `DELETE /workspaces/:slug/branding`) purges both attachments and resets the source to "initials". This uses a standard `button_to` with `method: :delete` — no custom JavaScript fetch needed.
+The delete action (`DELETE /account/avatar` or `DELETE /workspaces/:slug/logo`) purges both attachments and resets the source to "initials". This uses a standard `button_to` with `method: :delete` — no custom JavaScript fetch needed.
+
+The picker takes the remove target as its own required local, `remove_url:`, separate from `form_url:`, which is where saves go. They are different resources: a workspace's logo saves through `workspaces#update`, so passing its `form_url` as the remove target would send **Remove photo** to `workspaces#destroy` and discard the whole workspace (#1402). A new caller names both.

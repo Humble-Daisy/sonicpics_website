@@ -2,15 +2,8 @@
 
 require "rails_helper"
 
-# #1050: Deactivate, Reactivate and Transfer ownership are button_to forms
-# rendered INSIDE the members_results Turbo frame, and all three controllers
-# answer with a redirect carrying a flash. Without an explicit `_top` target
-# Turbo frames that redirect into members_results, so the notice — rendered
-# outside the frame, in the layout — is fetched and thrown away. The action
-# succeeds and the user is never told what happened. Same class as #1038
-# (spec/system/workspaces/invitation_row_actions_spec.rb), and the reason
-# Deactivate cannot answer with a row-replacing stream instead: its
-# self-deactivation and last-owner branches redirect to a DIFFERENT page.
+# Row actions post from inside the members_results frame and answer with a redirect's flash, which must
+# reach the page (#1050, like #1038). Leaving redirects to another page, so Deactivate can't be a row stream.
 RSpec.describe "Member row actions escape the members frame", type: :system do
   let(:owner) { create(:user, first_name: "Olivia", last_name: "Owner") }
   let(:member) { create(:user, first_name: "Mel", last_name: "Member") }
@@ -32,10 +25,32 @@ RSpec.describe "Member row actions escape the members frame", type: :system do
     within(row_for(membership)) { click_button label }
   end
 
-  it "shows the deactivated notice after Deactivate, on an accessible restored page" do
+  def confirm_deactivate(membership, action: I18n.t("workspaces.members.deactivate_dialog.action"))
+    click_row_action(membership, I18n.t("workspaces.members.index.deactivate"))
+    within("dialog[open]") { click_button action }
+  end
+
+  it "says what Deactivate removes, and Cancel leaves the member active" do
     visit workspace_members_path(workspace)
 
     click_row_action(member_membership, I18n.t("workspaces.members.index.deactivate"))
+
+    expect(page).to have_css("dialog[open]", text: I18n.t("workspaces.members.deactivate_dialog.message",
+                                                           name: member.full_name, workspace_name: workspace.name))
+    expect(axe_clean_in_both_themes?(axe_options)).to be(true),
+      "AAA violations with the Deactivate dialog open: #{axe_violations_in_both_themes(axe_options).join("\n")}"
+
+    within("dialog[open]") { click_button I18n.t("modals.cancel") }
+
+    expect(page).to have_no_css("dialog[open]")
+    expect(page).to have_css(row_for(member_membership), text: I18n.t("workspaces.members.index.active"))
+    expect(member_membership.reload).not_to be_discarded
+  end
+
+  it "shows the deactivated notice after Deactivate, on an accessible restored page" do
+    visit workspace_members_path(workspace)
+
+    confirm_deactivate(member_membership)
 
     expect(page).to have_text(I18n.t("workspaces.members.destroy.deactivated"))
     expect(page).to have_css(row_for(member_membership),
@@ -84,7 +99,7 @@ RSpec.describe "Member row actions escape the members frame", type: :system do
     it "lands on the workspaces list with the 'left' notice" do
       visit workspace_members_path(workspace)
 
-      click_row_action(owner_membership, I18n.t("workspaces.members.index.deactivate"))
+      confirm_deactivate(owner_membership, action: I18n.t("workspaces.members.deactivate_dialog.leave_action"))
 
       expect(page).to have_current_path(workspaces_path)
       expect(page).to have_text(
@@ -104,7 +119,7 @@ RSpec.describe "Member row actions escape the members frame", type: :system do
     it "keeps the owner and shows the last-owner alert on the members page" do
       visit workspace_members_path(workspace)
 
-      click_row_action(owner_membership, I18n.t("workspaces.members.index.deactivate"))
+      confirm_deactivate(owner_membership)
 
       expect(page).to have_text(
         I18n.t("workspaces.members.destroy.cannot_deactivate_last_owner")

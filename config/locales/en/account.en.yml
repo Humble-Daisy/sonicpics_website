@@ -52,6 +52,7 @@ en:
     avatars:
       edit:
         change: "Change avatar"
+        change_aria_label: "%{initials}, change avatar"
       update:
         success: "Avatar updated."
         rate_limited: "Too many requests. Please try again later."
@@ -87,7 +88,7 @@ en:
         description: "People you've told not to invite you again. Blocking is per-sender and per-address, so this lists blocks on the address you sign in with."
         blocked_on: "Blocked %{time} ago"
         allow_button: "Allow again"
-        allow_aria_label: "Allow invitations from %{sender} again"
+        allow_aria_label: "Allow again: invitations from %{sender}"
         allow_title: "Allow invitations from %{sender} again?"
         allow_message: "They'll be able to invite you again, and any invitation they already sent you will be delivered. You can block them again from any invitation email."
         empty_state: "You haven't blocked anyone. The “Don't invite me again” link in an invitation email adds a sender here."

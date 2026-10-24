@@ -30,7 +30,7 @@ It removes `alt` only where it equals that same attachment's file name, leaves e
 
 With `load_defaults 8.2`, HTML templates compile through [Herb](https://herb-tools.dev), which parses the HTML around the ERB. A template with broken structure, such as an unclosed tag or ERB output where an attribute name belongs, fails when it compiles, naming the file and line, instead of rendering malformed markup. `bin/rails herb:check` compiles every HTML template on the view paths without rendering anything. It reports one file today, a partial inside the biscuit-rails gem that the app overrides and never renders (#1341). `spec/code_smells/templates_compile_through_herb_spec.rb` runs the same check on every pull request, over the Lookbook previews, the Turbo Stream templates and the static pages in `public/` as well, with that partial as its one reviewed exception, which the spec drops once the gem's copy compiles. Other formats, such as text mailers and Turbo Stream templates, still compile through Erubi.
 
-Two test gems needed accommodating on Rails main. `rspec-rails` is pinned to a commit of its own main branch, where its Rails-main fixes are merged but not yet released (#1338). Bullet loads through `config/bullet_on_rails_main.rb`, which hands it its Active Record 8.1 patches because Bullet 8.2.0 refuses to load on 8.2 (#1337). `spec/config/bullet_on_rails_main_spec.rb` proves Bullet still catches an N+1, and fails the day Bullet supports 8.2 itself.
+One test gem needs accommodating on Rails main: `rspec-rails` is pinned to a commit of its own main branch, where its Rails-main fixes are merged but not yet released (#1338). Bullet needed a load shim until 8.3.0 learned Active Record 8.2 (#1337); it now loads like any other gem, and `spec/config/bullet_spec.rb` proves it still catches an N+1.
 
 Dependabot does not bump git-pinned gems: its bundler block ignores exactly the gems `Gemfile.lock` takes from git, and a template invariant keeps the two lists equal in both directions. The pin moves by hand:
 
@@ -224,18 +224,23 @@ The project uses a two-gate CI pipeline:
 
 ### Gate 1: Local (Lefthook pre-push)
 
-Runs automatically when you `git push`. No setup needed beyond `bundle exec lefthook install` (runs once after clone).
+Runs automatically when you `git push`. No setup needed beyond `bundle exec lefthook install` (runs once after clone). The checks run one at a time, in this order, and the first failure stops the push:
 
 | Check | Tool |
 |-------|------|
+| Stylesheet | `tailwindcss:build`, first, so system specs never read a half-written stylesheet |
 | Security scan | Brakeman |
-| Full test suite | RSpec (full suite) |
-| Accessibility audit | axe-core WCAG 2.2 AAA on every system spec |
+| Gem CVEs | bundler-audit, after updating the advisory database to the latest, as CI's fresh clone does; it needs the network. It audits the Hot Cell image's lockfile (`hotcell/Gemfile.lock`) too |
 | Code style | RuboCop |
+| ERB templates | erb_lint |
+| Markdown | `mdl` |
+| Full test suite | `bin/parallel-rspec`, including the axe-core WCAG 2.2 AAA audit on every system spec |
+| Hot Cell image | `docker build --pull hotcell`, only when the branch changes something under `hotcell/`; the build installs libheif's HEVC and AV1 decoders by name and fails unless libvips registers its HEIF loader |
+| Production image | `docker build`, last, and only when the branch changes a build input (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`); refuses the push if Docker isn't running |
 
 Pre-commit hooks also auto-fix Ruby style issues on staged files.
 
-Skip hooks in emergencies with `LEFTHOOK=0 git push` or `--no-verify`.
+Don't skip the hooks. When one fails, run that check on its own to see why — each one's command is in `lefthook.yml`, and the suite is `bin/parallel-rspec` — fix it, and push again. `LEFTHOOK=0` and `--no-verify` do turn the hooks off, but they only move the failure: CI runs the same checks on the pull request, and the image build runs again on every push to `main`.
 
 ### Gate 2: GitHub Actions (on push/PR)
 
@@ -243,24 +248,22 @@ Runs the same checks plus additional linting:
 
 | Job | What it checks |
 |-----|---------------|
-| `scan_ruby` | Brakeman + bundler-audit (gem CVEs) |
-| `scan_js` | importmap audit (JS dependency CVEs) |
-| `lint` | RuboCop with GitHub annotations |
-| `lint_docs` | `mdl` (markdown) + `erb_lint` (ERB) |
+| `static` | One job for every static check: Brakeman, bundler-audit (gem CVEs), the importmap audit (JS dependency CVEs), RuboCop with GitHub annotations, the comment-block gate over the PR's diff, `mdl` (markdown) and `erb_lint` (ERB). Each check runs even after an earlier one fails, so one push reports every failure. They were four jobs; one runner minute bills for what took four. |
 | `test` | Full RSpec with Cuprite, axe accessibility, screenshot artifacts on failure |
-| `docker_build` | Verifies the production `Dockerfile` builds successfully on every PR (catches build-time regressions that structural specs cannot). Uses GHA layer caching — cold builds ~3-5 min, warm builds ~30-60s. See [Deployment](/docs/developer/deployment). |
+| `docker_build` | Verifies the production `Dockerfile` builds (catches build-time regressions that structural specs cannot). Its own workflow, run on every push to `main`, unfiltered. A pull request that changes a build input (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`) gets the same proof from `image_scan`, which builds the identical image from scratch, so `docker_build` runs on a pull request only when its own workflow changes. The pre-push hook runs the same build locally through `bin/docker-build-check` on the same inputs. Uses GHA layer caching — cold builds ~3-5 min, warm builds ~30-60s. See [Deployment](/docs/developer/deployment). |
 
 ### Gate 3: Scheduled lanes (not on push/PR)
 
-Three checks answer questions a per-PR run cannot, because what they watch changes without anyone committing. Each also runs on demand from the Actions tab (`workflow_dispatch`).
+Four checks answer questions a per-PR run cannot, because what they watch changes without anyone committing. Each also runs on demand from the Actions tab (`workflow_dispatch`).
 
 | Workflow | When | What it checks |
 |----------|------|---------------|
-| `js_advisory` | Daily | The same importmap audit as `scan_js`, against `main` — an advisory published between pushes is otherwise invisible until the next PR happens to touch the tree. `scan_js` stays the required check; this is additive. |
-| `image_scan` | Weekly (plus Dockerfile-affecting PRs) | OS-package CVEs in the production image, which appear without any code change. |
+| `js_advisory` | Daily | The same importmap audit as the `static` job, against `main` — an advisory published between pushes is otherwise invisible until the next PR happens to touch the tree. `static` stays the required check; this is additive. |
+| `image_scan` | Weekly, plus every PR that changes a build input | OS-package CVEs in the production image, which appear without any code change. It builds the image from scratch, so on those PRs it is also the proof that the image builds. |
+| `hotcell_image_scan` | Weekly where the `HOTCELL_SCAN` repository variable is set, plus every PR that changes `hotcell/` | The same scan of the [Hot Cell](/docs/developer/hot-cell) image. A fork that keeps the cell off leaves the variable unset and pays for no weekly build. |
 | `fork_vocabulary` | Weekly | The whole suite under `spec/fixtures/vocabulary.course.yml`, proving the promise that a fork renaming its nouns keeps this suite green. The per-PR gate catches literal-noun copy assertions in the shapes it knows; this catches the rest. |
 
-**Scheduled workflows switch themselves off in an inactive public repository.** GitHub disables them after 60 days with no repository activity — see [Events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows) (`schedule`). The condition is repository *visibility*, so a private fork is not affected; a public fork that goes quiet loses these three lanes silently and re-enables them with any repository activity.
+**Scheduled workflows switch themselves off in an inactive public repository.** GitHub disables them after 60 days with no repository activity — see [Events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows) (`schedule`). The condition is repository *visibility*, so a private fork is not affected; a public fork that goes quiet loses these four lanes silently and re-enables them with any repository activity.
 
 ### Development Workflow
 

@@ -95,7 +95,6 @@ end
 |---|---|---|---|
 | `PasswordChangedNotifier` | `security` | `danger` | `User#password_digest` change |
 | `PasswordLockedNotifier` | `security` | `danger` | Failed password attempts lock the account (`User#locked_at` set) |
-| `PasswordLockedNotifier` | `security` | `danger` | Failed password attempts lock the account (`User#locked_at` set) |
 | `PasskeyAddedNotifier` | `security` | `danger` | Passkey enrollment (`Passkeys::Registration::CredentialsController#create`) |
 | `SignInFromNewDeviceNotifier` | `security` | `danger` | Login from a previously-unseen browser fingerprint |
 | `WorkspaceInvitationAcceptedNotifier` | `workspace_activity` | `success` | An invitee accepts the inviter's invitation |

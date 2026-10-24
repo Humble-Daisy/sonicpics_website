@@ -137,6 +137,40 @@ RSpec.describe NotificationMailer, type: :mailer do
       expect(mail.text_part.body.encoded).to include(settings_connected_accounts_url)
     end
   end
+
+  describe "#password_locked" do
+    around do |ex|
+      original = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      ex.run
+    ensure
+      Rails.cache = original
+    end
+
+    let(:user) { create(:user, email_address: "ada@example.com", first_name: "Ada") }
+    let(:mail) { described_class.with(notification: nil, recipient: user, record: user).password_locked }
+
+    it "tells the holder how long password sign-in is paused, under a purpose-driven H1" do
+      html = mail.html_part.body.encoded
+      heading = I18n.t("notification_mailer.password_locked.heading")
+      expect(mail.to).to eq([ "ada@example.com" ])
+      expect(html).to match(%r{<h1[^>]*>\s*#{Regexp.escape(heading)}\s*</h1>}m)
+      expect(mail.text_part.body.encoded).to include("Hi Ada", User::LOCK_DURATION.inspect)
+    end
+
+    it "links to sign-in, where an emailed link or a passkey still works" do
+      expect(mail.html_part.body.encoded).to include(new_session_url)
+      expect(mail.text_part.body.encoded).to include(new_session_url)
+    end
+
+    it "stops at the per-recipient throttle" do
+      sent = Array.new(EmailRecipientThrottle::CAP + 1) do
+        described_class.with(notification: nil, recipient: user, record: user).password_locked.to
+      end
+      expect(sent.last).to be_blank
+    end
+  end
+
   # A suspended user gets none of this mail, security mail included (#1132).
   describe "a suspended recipient" do
     let(:workspace) { create(:workspace, name: "Acme") }

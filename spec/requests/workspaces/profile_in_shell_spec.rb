@@ -18,6 +18,13 @@ RSpec.describe "Workspace Profile in the workspace shell", type: :request do
     expect(doc.at_css("#settings-aria-live")).to be_nil
   end
 
+  it "names the logo button with the initials it shows (WCAG 2.5.3 Label in Name)" do
+    get edit_workspace_path(workspace)
+    button = Capybara.string(response.body).find("button:has(#workspace_logo_branding)")
+    expect(button[:"aria-label"]).to be_nil
+    expect(button.find(".sr-only").text).to contain_visible_text(workspace.identity.initials).and include("change logo")
+  end
+
   it "shows the secondary sub-nav with Profile current and a distinct aria-label" do
     get edit_workspace_path(workspace)
     doc = Nokogiri::HTML(response.body)

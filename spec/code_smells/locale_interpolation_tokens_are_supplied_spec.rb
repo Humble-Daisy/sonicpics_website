@@ -9,7 +9,7 @@ require "rails_helper"
 RSpec.describe "Code smell: every locale interpolation token is supplied" do
   caller_supplied = %w[
     accepter action added_user_name address app_name cap count current date
-    decliner_email device duration email first_name from hours_remaining
+    decliner_email device duration email first_name from hours_remaining initials
     invitee_email inviter limit link max member metric minutes mode name
     names new_email new_role nickname os percent period phrase project_name
     provider query relative role sender sent shown skipped summary time title to

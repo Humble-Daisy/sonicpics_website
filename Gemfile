@@ -66,22 +66,18 @@ gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 2.2"
-# image_processing 2.0 dropped the transitive backend dep; libvips is installed in CI
-# (.github/workflows/ci.yml) and the production Dockerfile, and Rails 8.1 defaults
-# active_storage.variant_processor to :vips, so we declare ruby-vips explicitly.
-# require: false skips Bundler.require — Active Storage's image_processing
-# transformer pulls in `vips` lazily on first variant call. active_storage_validations
-# also eager-loads its vips analyzer at Rails boot, so libvips must be installed in
-# every job that boots Rails (test, scan_js, lint_docs).
+# Variants run in this process while the Hot Cell is off (config/initializers/hotcell.rb), so ruby-vips
+# and the libvips system library stay. Active Storage's engine loads it at boot, whatever require says.
 gem "ruby-vips", require: false
 gem "active_storage_validations"
+gem "activestorage-hotcell-client"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
-  # N+1 query detection; loaded by config/bullet_on_rails_main.rb until Bullet supports 8.2 (#1337).
-  gem "bullet", require: false
+  # N+1 query detection
+  gem "bullet"
 
   # Audits gems for known security defects (use config/bundler-audit.yml to ignore issues)
   gem "bundler-audit", require: false
@@ -118,6 +114,7 @@ group :development, :test do
 end
 
 group :test do
+  gem "activestorage-hotcell-server", require: false
   gem "capybara"
   gem "cuprite" # pure-Ruby CDP driver (ferrum) — no Node/browser-driver dependency
   gem "simplecov", require: false
@@ -132,10 +129,10 @@ group :development do
   gem "hotwire-spark"
 end
 
-gem "axe-core-rspec", "~> 4.13", group: :test
+gem "axe-core-rspec", "~> 4.14", group: :test
 gem "axe-core-api", "~> 4.11", group: :test
 
-gem "lefthook", "~> 2.1", groups: [ :development, :test ], require: false
+gem "lefthook", "~> 2.2", groups: [ :development, :test ], require: false
 
 gem "biscuit-rails", "~> 0.3.0"
 
@@ -144,7 +141,7 @@ gem "lexxy", "~> 1.0"
 # Runtime dependency: the vendored app/components/ui/* are ViewComponents and are
 # loaded in production. This MUST stay a top-level gem — modelrails_ui (below) only
 # GENERATES the components in development and is excluded from production.
-gem "view_component", "~> 4.15"
+gem "view_component", "~> 4.16"
 
 # Runtime dependency of the vendored ApplicationComponent#cn helper: tailwind_merge
 # resolves conflicting Tailwind utilities so a per-instance `class:` passthrough
@@ -159,7 +156,7 @@ group :development do
   # moment the branch moves). Dev-only, so no production/runtime impact.
   # Setup: run `rails g modelrails_ui:agent_rules` to scaffold your local agent rules
   # (.modelrails_ui/ + a CLAUDE.md import — kept local, like CLAUDE.md itself).
-  gem "modelrails_ui", git: "https://github.com/dschmura/modelrails_ui.git", tag: "v0.24.0"
+  gem "modelrails_ui", git: "https://github.com/dschmura/modelrails_ui.git", tag: "v0.25.0"
 
   # Living documentation / component explorer for the vendored UI::* components
   # (scaffolded by `rails g modelrails_ui:lookbook`). Mounted at /lookbook in

@@ -1,4 +1,4 @@
-<%# locals: (model:, form_url:, hub_url:, hub_title:, crop_title:) -%>
+<%# locals: (model:, form_url:, remove_url:, hub_url:, hub_title:, crop_title:) -%>
 <%
   identity = model.identity
   has_image = identity.image?
@@ -59,7 +59,7 @@
       <%= render "shared/identity_picker/crop_viewport",
             has_image: has_image, original_url: original_url %>
       <%= render "shared/identity_picker/crop_controls" %>
-      <%= render "shared/identity_picker/crop_footer", form_url: form_url, file_input_id: crop_file_input_id %>
+      <%= render "shared/identity_picker/crop_footer", remove_url: remove_url, file_input_id: crop_file_input_id %>
     </div>
   </div>
 </div>

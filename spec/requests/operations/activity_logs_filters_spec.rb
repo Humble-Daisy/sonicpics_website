@@ -180,10 +180,10 @@ RSpec.describe "Operations activity ledger filters", type: :request do
     details = Capybara.string(response.body).first("tbody details", visible: :all)
     expect(details).to have_link("Priya Nair", href: operations_user_path(person), visible: :all)
     pivot = details.find("a", text: I18n.t("operations.activity_logs.index.details.only_person", email: person.email_address), visible: :all)
-    expect(pivot[:"aria-label"]).to eq(I18n.t("operations.activity_logs.index.details.only_person_aria_label", email: person.email_address))
+    expect(pivot[:"aria-label"]).to include(person.email_address).and contain_visible_text(pivot.text)
     scope = details.find("a", text: I18n.t("operations.activity_logs.index.details.only_workspace"), visible: :all)
     expect(scope[:href]).to include("workspace=#{workspace.slug}")
-    expect(scope[:"aria-label"]).to eq(I18n.t("operations.activity_logs.index.details.only_workspace_aria_label", name: "Alpha"))
+    expect(scope[:"aria-label"]).to include("Alpha").and contain_visible_text(scope.text)
   end
 
   # Over the cap the decrypt pass is not run at all; the box still answers an

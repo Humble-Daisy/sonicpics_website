@@ -105,6 +105,7 @@ RSpec.describe "Flash messages are asserted, not just redirects" do
         [ 'problems.map { |problem| t(CLAIM_PROBLEM_MESSAGES.fetch(problem)) }.join(" ")' ],
       "app/controllers/workspaces/invitations/resends_controller.rb" => [ "t(notice_key)" ],
       "app/controllers/workspaces/invitations_controller.rb" => [ "notice" ],
+      "app/controllers/workspaces/logos_controller.rb" => [ "result.error_message" ],
       "app/controllers/workspaces/members_controller.rb" => [ "message" ],
       "app/controllers/workspaces_controller.rb" => [ "message" ]
     }

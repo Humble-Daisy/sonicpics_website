@@ -75,6 +75,9 @@ RSpec.describe "Mailer templates", type: :system do
       notification = user.notifications.order(:id).last
       NotificationMailer.with(notification: notification, recipient: user, record: user).sign_in_from_new_device
     },
+    "NotificationMailer#password_locked" => -> {
+      NotificationMailer.with(notification: nil, recipient: user, record: user).password_locked
+    },
     "NotificationMailer#digest" => -> {
       membership = create(:membership, user: user, workspace: workspace)
       notification = deliver_in_app(WorkspaceMemberAddedNotifier, membership, user)
