@@ -1,0 +1,29 @@
+<%# The original sonicpics.com header: the logo artwork is the home link, and
+    Contact and Support sit opposite it. Two links fit beside the logo at
+    phone width, so there is no menu button. %>
+<header class="bg-surface border-b border-border">
+  <nav aria-label="<%= t("navigation.aria_label") %>"
+       class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2
+              flex flex-wrap items-center justify-between gap-2">
+    <%= link_to root_path,
+          class: "inline-flex items-center min-h-input rounded
+                  hover:opacity-80 transition-opacity focus-ring" do %>
+      <%= image_tag "sonicpics/SonicPicsV2.png",
+            alt: t("pages.chrome.home"),
+            class: "h-9 sm:h-12 w-auto" %>
+    <% end %>
+
+    <ul class="flex items-center gap-1" role="list">
+      <% { contact: page_path(:contact), support: page_path(:support) }.each do |page, path| %>
+        <li>
+          <%= link_to t("pages.chrome.#{page}"), path,
+                aria: { current: ("page" if current_page?(path)) },
+                class: "inline-flex items-center min-h-input px-3 rounded
+                        font-semibold text-interactive hover:text-interactive-hover
+                        aria-[current=page]:underline underline-offset-8 decoration-2
+                        focus-ring" %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+</header>

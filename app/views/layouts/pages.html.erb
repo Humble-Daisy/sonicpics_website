@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<%# The brochure layout PagesController gives signed-out visitors. SonicPics' public
+    site is the original sonicpics.com: a logo, Contact and Support, no
+    accounts. Its header and footer are fork-owned partials under pages/.
+    The pages stay light because the logo artwork is drawn for a light ground. %>
+<html lang="<%= I18n.locale %>"
+      data-controller="theme"
+      data-theme-theme-value="light">
+<%= render "shared/layout_head" %>
+
+  <body class="min-h-dvh flex flex-col bg-surface text-text-heading">
+    <%= render "shared/skip_link" %>
+
+    <%= render "pages/header" %>
+    <%= render "shared/toasts" %>
+
+    <main id="main-content"
+          tabindex="-1"
+          class="flex-1">
+      <%= yield %>
+    </main>
+
+    <%= render "pages/footer" %>
+    <%= biscuit_banner %>
+  </body>
+</html>

@@ -288,7 +288,7 @@ RSpec.describe "User menu dropdown", type: :system do
   describe "unauthenticated" do
     it "shows sign in link instead of avatar" do
       Capybara.reset_sessions!
-      visit root_path
+      visit new_session_path
       expect(page).to have_link(I18n.t("navigation.sign_in"))
       expect(page).to have_no_css("#user-menu-button", visible: :visible)
     end

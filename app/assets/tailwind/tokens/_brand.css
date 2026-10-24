@@ -23,3 +23,20 @@
    there is real. Run the suite before shipping a rebrand.
    See /docs/developer/forking.
    ========================================================================== */
+
+/* SonicPics: the original sonicpics.com drew its links in maroon (#800040).
+   Tailwind's pink family carries that hue at the shades the semantic layer
+   reads for interactive text (800 light, 300 dark), so primary maps onto it. */
+:root {
+  --primary-50:  var(--color-pink-50);
+  --primary-100: var(--color-pink-100);
+  --primary-200: var(--color-pink-200);
+  --primary-300: var(--color-pink-300);
+  --primary-400: var(--color-pink-400);
+  --primary-500: var(--color-pink-500);
+  --primary-600: var(--color-pink-600);
+  --primary-700: var(--color-pink-700);
+  --primary-800: var(--color-pink-800);
+  --primary-900: var(--color-pink-900);
+  --primary-950: var(--color-pink-950);
+}

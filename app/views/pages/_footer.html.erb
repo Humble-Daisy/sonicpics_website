@@ -1,0 +1,38 @@
+<%# The original's footer: the Humble Daisy credit and the page links, plus
+    Cookie settings, which reopens the consent banner (footer controller). %>
+<footer data-controller="footer"
+        data-footer-cookie-name-value="<%= Biscuit.configuration.cookie_name %>"
+        class="bg-surface border-t border-border mt-auto">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6
+              flex flex-col items-center gap-3
+              sm:flex-row sm:flex-wrap sm:justify-between">
+    <p class="text-sm text-text-muted">
+      &copy; <%= Date.current.year %>
+      <%= link_to t("pages.chrome.company_url"),
+            target: "_blank",
+            rel: "noopener noreferrer",
+            class: "text-interactive hover:text-interactive-hover underline rounded focus-ring" do %>
+        <%= t("pages.chrome.company") %>
+        <span class="sr-only"><%= t("pages.external.new_tab") %></span>
+      <% end %>
+    </p>
+
+    <nav aria-label="<%= t("footer.aria.legal") %>"
+         class="flex flex-wrap items-center justify-center gap-x-2">
+      <% { support: page_path(:support), contact: page_path(:contact), privacy: page_path(:privacy) }.each do |page, path| %>
+        <%= link_to t("pages.chrome.#{page}"), path,
+              class: "inline-flex items-center min-h-input px-2 text-sm text-text-muted
+                      hover:text-interactive-hover focus-ring rounded" %>
+      <% end %>
+      <button type="button"
+              data-action="click->footer#reopenCookies"
+              class="inline-flex items-center min-h-input px-2 text-sm text-text-muted
+                     hover:text-interactive-hover focus-ring rounded">
+        <%= t("footer.cookie_settings") %>
+      </button>
+      <%= link_to t("pages.chrome.back_to_top"), "#main-content",
+            class: "inline-flex items-center min-h-input px-2 text-sm text-text-muted
+                    hover:text-interactive-hover focus-ring rounded" %>
+    </nav>
+  </div>
+</footer>

@@ -38,7 +38,7 @@ RSpec.describe "User menu", type: :request do
 
   describe "unauthenticated user" do
     it "shows sign in link instead of user menu" do
-      get root_path
+      get new_session_path
       expect(response.body).to include(I18n.t("navigation.sign_in"))
       expect(response.body).not_to include('id="user-menu"')
     end
