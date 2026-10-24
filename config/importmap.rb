@@ -2,6 +2,7 @@
 
 pin "application"
 pin "navigation_focus"
+pin "lexxy_label_in_name"
 pin "@hotwired/turbo-rails", to: "turbo.min.js"
 pin "@hotwired/stimulus", to: "stimulus.min.js"
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js"

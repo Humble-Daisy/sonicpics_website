@@ -115,14 +115,12 @@
             data-action="click->a11y-sim#toggle"
             aria-haspopup="true"
             aria-expanded="false"
-            aria-label="<%= t("a11y_sim.trigger_aria_label") %>"
             class="inline-flex items-center gap-2 min-h-input px-3 py-2 text-sm rounded-md
                    bg-warning-surface border border-dashed border-warning
                    text-text-body font-medium
                    hover:brightness-105
                    focus-ring">
-      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warning-surface text-warning border border-warning tracking-wide"
-            aria-hidden="true"><%= t("a11y_sim.dev_badge") %></span>
+      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warning-surface text-warning border border-warning tracking-wide"><%= t("a11y_sim.dev_badge") %></span>
       <span data-a11y-sim-target="triggerIcon" class="inline-flex"><%= mode_icons["normal"] %></span>
       <span><%= t("a11y_sim.prefix") %></span>
       <span data-a11y-sim-target="triggerLabel" class="font-semibold"><%= t("a11y_sim.modes.normal") %></span>

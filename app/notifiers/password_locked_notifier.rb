@@ -6,6 +6,13 @@ class PasswordLockedNotifier < ApplicationNotifier
   category :security
   severity :danger
 
+  deliver_by :email do |config|
+    config.mailer = "NotificationMailer"
+    config.method = :password_locked
+    config.before_enqueue = -> { throw(:abort) unless deliver_email_now? }
+    config.enqueue = true
+  end
+
   notification_methods do
     def message
       render_safe_or_placeholder do

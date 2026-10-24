@@ -5,5 +5,9 @@ module Workspaces
     def show?
       can?("manage_settings")
     end
+
+    def destroy?
+      can?("manage_settings")
+    end
   end
 end

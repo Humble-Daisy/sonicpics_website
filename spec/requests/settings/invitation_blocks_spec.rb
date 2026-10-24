@@ -29,6 +29,15 @@ RSpec.describe "Settings::InvitationBlocks", type: :request do
       expect(response.body).to include("Dana Sender")
     end
 
+    it "names each Allow again button with the words it shows (WCAG 2.5.3 Label in Name)" do
+      create(:invitation_block, inviter: inviter, email: user.email_address)
+
+      get settings_invitation_blocks_path
+
+      button = Capybara.string(response.body).find("button[data-action='click->modal#open']")
+      expect(button[:"aria-label"]).to contain_visible_text(button.text).and include("Dana Sender")
+    end
+
     it "does not list a block against somebody else's address" do
       create(:invitation_block, inviter: inviter, email: "someone-else@example.com")
 

@@ -25,13 +25,13 @@ RSpec.describe "Personal workspace Profile", type: :system do
   it "exposes the logo-picker trigger" do
     visit edit_workspace_path(workspace)
 
-    expect(page).to have_css("button[aria-label='#{I18n.t("workspaces.brandings.edit.change_logo")}']")
+    expect(page).to have_css("button:has(#workspace_logo_branding)")
   end
 
   it "opens the identity-picker dialog from the logo trigger" do
     visit edit_workspace_path(workspace)
 
-    find("button[aria-label='#{I18n.t("workspaces.brandings.edit.change_logo")}']").click
+    find("button:has(#workspace_logo_branding)").click
 
     # The hub turbo frame loads its source-selection radiogroup.
     expect(page).to have_css("#identity-picker-hub [role='radiogroup']", wait: 10)
@@ -41,7 +41,7 @@ RSpec.describe "Personal workspace Profile", type: :system do
   it "passes the AAA axe check with the identity picker open, both themes" do
     visit edit_workspace_path(workspace)
 
-    find("button[aria-label='#{I18n.t("workspaces.brandings.edit.change_logo")}']").click
+    find("button:has(#workspace_logo_branding)").click
     expect(page).to have_css("#identity-picker-hub [role='radiogroup']", wait: 10)
 
     expect(axe_clean_in_both_themes?).to(

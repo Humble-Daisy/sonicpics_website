@@ -1,16 +1,9 @@
 <%= turbo_stream.replace "user_avatar_profile" do %>
-  <span id="user_avatar_profile" class="block relative">
-    <%= avatar_for(Current.user, size: :xl) %>
-    <span class="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/20
-                 transition-colors flex items-center justify-center">
-      <%= icon(:pencil, size: :md,
-            class: "text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md") %>
-    </span>
-  </span>
+  <%= render "settings/profiles/avatar", user: Current.user %>
 <% end %>
 
 <%= turbo_stream.replace "user_avatar_header" do %>
-  <span id="user_avatar_header"><%= avatar_for(Current.user, size: :md) %></span>
+  <%= render "shared/user_avatar_header", user: Current.user, summary: unread_notification_summary(Current.user) %>
 <% end %>
 
 <% if @close_modal %>

@@ -20,11 +20,29 @@
         </span>
       </div>
     </div>
-    <% if policy(@resource).update? %>
-      <%= link_to t("workspaces.projects.resources.show.edit"),
-            edit_workspace_project_resource_path(@workspace, @project, @resource),
-            class: "btn-primary" %>
-    <% end %>
+    <div class="flex items-center gap-3">
+      <% if policy(@resource).destroy? %>
+        <div data-controller="modal" class="inline">
+          <button type="button"
+                  data-action="click->modal#open"
+                  class="btn-touch-target btn-text btn-text-danger text-sm">
+            <%= t("workspaces.projects.resources.show.delete") %>
+          </button>
+          <%= render "shared/confirm_dialog",
+                title: t("workspaces.projects.resources.destroy.title"),
+                message: t("workspaces.projects.resources.destroy.confirm"),
+                confirm_text: t("workspaces.projects.resources.destroy.confirm_action"),
+                confirm_url: workspace_project_resource_path(@workspace, @project, @resource),
+                confirm_method: :delete,
+                variant: :danger %>
+        </div>
+      <% end %>
+      <% if policy(@resource).update? %>
+        <%= link_to t("workspaces.projects.resources.show.edit"),
+              edit_workspace_project_resource_path(@workspace, @project, @resource),
+              class: "btn-primary" %>
+      <% end %>
+    </div>
   </div>
 
   <div class="mt-8 prose max-w-none">

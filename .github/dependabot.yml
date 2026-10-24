@@ -5,6 +5,12 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 10
+  # One grouped PR per week: every ungrouped bump runs CI, Image Scan and
+  # Devcontainer on each fork — ~87 billed minutes a gem on a private one.
+  groups:
+    bundler:
+      patterns:
+        - "*"
   ignore:
     # Bumped by hand with the re-vendor pre-flight; Dependabot's default cooldown
     # proposed this git-tag gem as a downgrade three times (#665, #888, #1261).
@@ -25,6 +31,13 @@ updates:
     - dependency-name: activestorage
     - dependency-name: activesupport
     - dependency-name: rspec-rails
+    # Hot Cell runs on both sides of a socket at one version, so both lockfiles move together by hand;
+    # bin/bundler-audit check hotcell still flags any advisory in the cell's gems (/docs/developer/hot-cell).
+    - dependency-name: activestorage-hotcell-client
+    - dependency-name: activestorage-hotcell-server
+    - dependency-name: hotcell-client
+    - dependency-name: hotcell-core
+    - dependency-name: hotcell-server
 - package-ecosystem: github-actions
   directory: "/"
   schedule:

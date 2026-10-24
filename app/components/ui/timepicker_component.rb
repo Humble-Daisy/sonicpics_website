@@ -53,7 +53,8 @@ module UI
         data: {
           controller: "timepicker",
           timepicker_format_value: @format,
-          timepicker_step_value: @step
+          timepicker_step_value: @step,
+          timepicker_name_value: @label
         }.merge(caller_data),
         **@html_attrs) do
         concat hidden_input if @name
@@ -92,7 +93,7 @@ module UI
         "aria-expanded": "false",
         "aria-haspopup": "dialog",
         "aria-controls": popover_id,
-        "aria-label": @label,
+        "aria-label": [ @label, @value ].compact.join(", "),
         "aria-describedby": hint_id,
         data: {
           timepicker_target: "trigger",

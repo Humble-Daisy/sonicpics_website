@@ -104,7 +104,7 @@ en:
           names: "Names are matched after decryption on instances under %{limit} users; above that, search by exact email address."
         top_actors:
           label: "Most active"
-          entry_aria_label: "Show only activity by %{name} (%{count} in this view)"
+          entry_aria_label: "Show only activity by %{name}, %{count} in this view"
         filters:
           label: "Filter activity"
           search_label: "Search by email, name, %{workspace} or %{project}"
@@ -171,9 +171,9 @@ en:
           stored_as: "stored as %{action}"
           only_person: "only %{email}"
           # Link purpose out of context (2.4.9); the visible text is inside it.
-          only_person_aria_label: "Show only activity involving %{email}"
+          only_person_aria_label: "Only %{email}: show activity involving this person"
           only_workspace: "only this %{workspace}"
-          only_workspace_aria_label: "Show only activity in %{name}"
+          only_workspace_aria_label: "Only this %{workspace}: show activity in %{name}"
           tier_admin: "Admin"
           tier_workspace: "%{Workspace}"
         rows:

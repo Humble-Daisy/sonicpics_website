@@ -23,7 +23,7 @@ RSpec.describe "Lexxy's alternative text dialog", type: :system do
     expect(workspace).to be_personal
     visit edit_workspace_project_resource_path(workspace, project, resource)
     find("lexxy-editor figure img").click
-    find("lexxy-editor button[aria-label='Alternative text']").click
+    find("lexxy-editor button.lexxy-attachment-toolbar__alternative-text").click
     dialog = find("lexxy-editor dialog.lexxy-alternative-text-dialog[open]")
     computed = ->(element, property) { page.evaluate_script("getComputedStyle(arguments[0]).#{property}", element) }
 
@@ -35,10 +35,19 @@ RSpec.describe "Lexxy's alternative text dialog", type: :system do
     end
   end
 
+  # Lexxy names the ALT button "Alternative text" (basecamp/lexxy#1304); the host renames it until that ships.
+  it "names the ALT button with the word it shows (WCAG 2.5.3 Label in Name)" do
+    visit edit_workspace_project_resource_path(workspace, project, resource)
+    find("lexxy-editor figure img").click
+    button = find("lexxy-editor button.lexxy-attachment-toolbar__alternative-text")
+
+    expect(button[:"aria-label"]).to contain_visible_text(button.text).and include("lternative text")
+  end
+
   it "lets an author describe an image, in an AAA dialog, and the description reaches the page" do
     visit edit_workspace_project_resource_path(workspace, project, resource)
     find("lexxy-editor figure img").click
-    find("lexxy-editor button[aria-label='Alternative text']").click
+    find("lexxy-editor button.lexxy-attachment-toolbar__alternative-text").click
 
     dialog = find("lexxy-editor dialog.lexxy-alternative-text-dialog[open]")
     expect(dialog.find("textarea[aria-label='Description']").value).to eq("")
@@ -67,7 +76,7 @@ RSpec.describe "Lexxy's alternative text dialog", type: :system do
     expect(page).to have_css("lexxy-editor lexxy-attachment-toolbar:not([hidden])")
 
     editable.send_keys([ :alt, :f10 ])
-    alt_button = find("lexxy-editor button[aria-label='Alternative text']")
+    alt_button = find("lexxy-editor button.lexxy-attachment-toolbar__alternative-text")
     expect(alt_button).to match_selector(":focus")
     alt_button.send_keys(:enter)
 

@@ -94,19 +94,37 @@ RSpec.describe ParallelRspecRunner do
   # tailwind_build ahead of rspec because a build racing the workers leaves
   # them reading a partial stylesheet and reporting phantom axe violations.
   # Building once here, before any worker forks, is the same guarantee.
-  it "builds assets before running the suite" do
+  it "prepares the worker databases and builds assets before running the suite" do
     called = []
     allow(runner).to receive(:reset_artifacts)
     allow(runner).to receive(:enumerate!)
     allow(runner).to receive(:expected_count).and_return(0)
     allow(runner).to receive(:verify_count!)
     allow(runner).to receive(:enforce_coverage!)
+    allow(runner).to receive(:prepare_databases!) { called << :prepare }
     allow(runner).to receive(:build_assets!) { called << :build }
     allow(runner).to receive(:run_suite!) { called << :suite }
 
     runner.run
 
-    expect(called).to eq([ :build, :suite ])
+    expect(called).to eq([ :prepare, :build, :suite ])
+  end
+
+  describe "#prepare_databases!" do
+    it "reloads the schema and seeds into every worker database in one pass" do
+      expect(runner).to receive(:system)
+        .with("bundle", "exec", "rake", "parallel:setup").and_return(true)
+
+      runner.prepare_databases!
+    end
+
+    it "aborts rather than running the suite against databases it could not seed" do
+      allow(runner).to receive(:system).and_return(false)
+
+      expect { runner.prepare_databases! }.to raise_error(SystemExit) do |error|
+        expect(error.status).not_to eq(0)
+      end
+    end
   end
 
   describe "#run_suite! under an explicit SEED (#867)" do

@@ -13,7 +13,7 @@ How the test suite is put together: the parallel runner and CI sharding, the con
 ### Two ways to run the suite
 
 - `bundle exec rspec` is the single-process reference path — always correct, just slow.
-- `bin/parallel-rspec` is the full-suite path: it runs the suite across all cores via `parallel_tests`, with two integrity gates layered on top of pass/fail.
+- `bin/parallel-rspec` is the full-suite path: it runs the suite across all cores via `parallel_tests`, with two integrity gates layered on top of pass/fail. Before the run it reloads the schema into every worker database and seeds it, so the pre-push suite and CI's shards both start from the same four global roles; a bare `rspec` does no seeding of its own.
 
 The two gates exist because a parallel splitter can silently drop work:
 
@@ -26,7 +26,7 @@ Worker count comes from `PARALLEL_TEST_PROCESSORS` or the machine's core count.
 
 ### CI sharding
 
-CI splits the suite across an 8-way shard matrix (#495, PR #615). With `CI_SHARD_INDEX` and `CI_SHARD_TOTAL` set, `bin/parallel-rspec` takes only its shard's slice of the spec files — greedy-packed by recorded per-file runtimes, with file size as the fallback weight — and skips the merged-coverage floor (each shard sees only a fraction of the suite; the `coverage_merge` CI job collates every shard's resultset and enforces the floor there). Example-count parity still runs per shard against the shard's own enumeration, and each shard records its file list so CI can assert the union of shards equals the full spec set — the shard splitter gets the same distrust as the worker splitter.
+CI splits the suite across a shard matrix (#495, PR #615) — 8 shards of 4 workers by default, the free public-runner shape. A fork sets the `CI_SHARDS` and `CI_WORKERS` repository variables in its Actions settings to change that without editing a tracked file; private repositories are billed per job, rounded up to the minute, so fewer, longer shards cost less there. With `CI_SHARD_INDEX` and `CI_SHARD_TOTAL` set, `bin/parallel-rspec` takes only its shard's slice of the spec files — greedy-packed by recorded per-file runtimes, with file size as the fallback weight — and skips the merged-coverage floor (each shard sees only a fraction of the suite; the `test` CI job collates every shard's resultset and enforces the floor there). Example-count parity still runs per shard against the shard's own enumeration, and each shard records its file list so CI can assert the union of shards equals the full spec set — the shard splitter gets the same distrust as the worker splitter.
 
 ### The runtime log lifecycle
 
@@ -34,7 +34,7 @@ CI splits the suite across an 8-way shard matrix (#495, PR #615). With `CI_SHARD
 
 - `split_seed` snapshots one **frozen** copy of the log, downloaded by every shard — the cross-shard split must be computed from identical input or shards overlap and leave holes.
 - `test_shard` restores the live log separately to seed *in-shard* worker balancing.
-- `coverage_merge` reassembles every shard's partial log and saves the cache for the next run.
+- `test` reassembles every shard's partial log and saves the cache for the next run.
 
 A cache miss is harmless: the split falls back to file size — still correct, just less balanced.
 
@@ -59,7 +59,22 @@ involves Faker-generated values (see #856-class collisions).
 
 The largest member is `spec/code_smells/template_invariants_spec.rb`. ModelRails is a template meant to be forked, so every default it ships propagates into every downstream fork; this spec asserts the structural invariants that came out of an 8-reviewer panel review on 2026-05-18. Each one catches a class of subtle misconfiguration that would otherwise propagate silently — Ruby-version drift across `.tool-versions`, `Gemfile`, `Gemfile.lock`, and the `Dockerfile`; test gems leaking into the production image; Dockerfile layer-cache invalidation from COPY ordering; dev/prod base-image divergence; missing onboarding signals; unused free performance settings; every workflow `uses:` SHA-pinned with its `# <tag>` trailer (the action-pin invariant — a fork's own unpinned ref fails the suite too) — plus invariants added since, such as the vulnerability-scan rules below.
 
-One of those is worth understanding when a CI change makes it fire: the container vulnerability scan must **never** reuse the Docker layer cache (#536). GitHub Actions cache scoping makes a branch read its *own* cache scope first, so a PR replays its own stale apt layer and never sees the fix main already picked up — stale-package CVE findings then look identical to real ones. Rebuilding costs about 45 seconds per run, which is cheap for a red that always means what it says.
+One of those is worth understanding when a CI change makes it fire: the container vulnerability scan must **never** reuse the Docker layer cache (#536). GitHub Actions cache scoping makes a branch read its *own* cache scope first, so a PR replays its own stale apt layer and never sees the fix main already picked up — stale-package CVE findings then look identical to real ones. Rebuilding costs about 45 seconds per run, which is cheap for a red that always means what it says. Keying the cache on the base image's digest would not help: `ruby:slim` is rebuilt for Debian point releases, not for interim security updates, so the digest stays the same exactly when the packages inside it change.
+
+### Destroy requests name their target
+
+`spec/code_smells/destroy_requests_name_their_target_spec.rb` exists because of #1402. The identity picker's **Remove photo** button sent `DELETE` to whatever URL it was given, a workspace passed the URL where its logo *saves*, and that URL's DELETE was `workspaces#destroy`. One click discarded the workspace. Nothing about the partial looked wrong on its own; the bad value arrived one partial up, as an ordinary route helper.
+
+So the guard reads every request a template can make (`button_to`, `link_to`, `form_with`, `form_tag`, under `app/views` and `app/components`) and, when the URL or the method is one of the template's declared locals, follows it to every `render` that passes it in, then up again until it reaches the template that names a real route helper. Each DELETE that comes out of that walk is checked against the route table:
+
+- it must land on a named route that actually has a DELETE action;
+- if that action soft-deletes, the request must be confirmed: the walk passes through `shared/confirm_dialog`, or the call carries `turbo_confirm` (Leave does). An action soft-deletes when its controller's `destroy` calls `discard!`, or calls a method that reaches `discard!` on a model it loads with `find` (`members#destroy` → `Membership#deactivate!`). Both sets are derived from the code by parsing it, not listed by hand.
+
+When it fires, the message names the whole render chain, outermost template first, so the place to look is usually the first template in it: that is where the URL was chosen. Point the control at the child resource it names, or put the destroy behind the confirm dialog. The guard reads template text, so it has blind spots, and it prints them whenever a rule fails: collection renders (`render partial:`), URLs built in Ruby, hand-written HTML method overrides, partials nothing renders, and a destroy that changes a record it did not load with `find`. Its negative controls replay #1402 on the Profile page and strip Leave's `turbo_confirm`, and both must keep failing.
+
+### Attachments are validated
+
+`spec/code_smells/attachments_are_validated_spec.rb` reads every `has_one_attached` and `has_many_attached` under `app/models`, concerns and the block form included, and requires a `content_type:` and a `size:` validation on each. Beyond those it accepts only validators known to leave the upload's bytes alone — `total_size:`, `limit:`, `attached:` and `presence:` — and refuses `content_type: { spoofing_protection: … }`. Every other `active_storage_validations` check reads the upload in the app process: `dimension:`, `aspect_ratio:` and `processable_file:` through libvips, `pages:` through `pdfinfo`, `duration:` and `with_audio:` through ffprobe, and spoofing protection through the `file` command or Magika. Keeping that decoding out of the app is the point of the [Hot Cell](/docs/developer/hot-cell) sandbox. A new validator fails the guard until someone has checked what it does and added it to the list. Uploads attached through rich text are not model attachments; `DirectUploadsController` gates their type and size instead.
 
 ### The two i18n gates
 

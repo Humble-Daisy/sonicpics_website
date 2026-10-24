@@ -22,7 +22,7 @@ en:
         profile_personal: "Your profile"
         profile_org: "Profile, %{workspace_name}"
         members: "Members of %{workspace_name}"
-        limits_and_plan: "Limits and plan for %{workspace_name}"
+        limits_and_plan: "Limits & Plan for %{workspace_name}"
     pages:
       profile_personal:
         h1: "Your profile"

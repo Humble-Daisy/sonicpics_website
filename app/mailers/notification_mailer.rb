@@ -135,6 +135,16 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  def password_locked
+    @recipient = params[:recipient]
+    @duration = User::LOCK_DURATION.inspect
+    @sign_in_url = new_session_url
+
+    return unless EmailRecipientThrottle.allow!(@recipient.email_address, kind: :password_locked)
+
+    mail(to: @recipient.email_address, subject: t("notification_mailer.password_locked.subject"))
+  end
+
   # Daily/weekly digest. Unlike the per-event mailers above, `digest` takes
   # positional args (user + array of notifications) because it's invoked
   # directly by `DigestMailerJob`, not through Noticed's `deliver_by :email`
