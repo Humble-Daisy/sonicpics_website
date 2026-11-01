@@ -16,7 +16,6 @@ RSpec.describe "Documentation cited paths" do
       "config/credentials.yml.enc" => "the template ships none; a fork generates and commits its own",
       "config/master.key" => "gitignored; every checkout keeps its own",
       "config/credentials/production.key" => "gitignored; a deployment keeps its own",
-      "config/credentials/production.yml.enc" => "the template ships none; a fork generates and commits its own",
       "config/credentials/staging.yml.enc" => "the template ships none; a fork with staging commits its own",
       "app/assets/builds/tailwind.css" => "a build artifact; tailwindcss:build writes it"
     }
