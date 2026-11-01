@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# The release flow is the release_flow gem's: /docs/developer/releasing. This adds a fork's template.
+require "bundler/setup"
+require "release_flow"
+require "yaml"
+
+module ForkTemplate
+  def self.config(root)
+    config = ReleaseFlow::Config.load(root)
+    fork_file = File.join(root, ".fork.yml")
+    return config if config.template || !File.exist?(fork_file)
+
+    config.with(template: YAML.safe_load_file(fork_file).to_h["template_url"].to_s[ReleaseFlow::GithubOrigin::URL, :repo])
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+  root = File.expand_path("..", __dir__)
+  begin
+    exit ReleaseFlow::CLI.start(ARGV, root: root, config: ForkTemplate.config(root))
+  rescue ReleaseFlow::Error => e
+    abort("bin/release: #{e.message}")
+  end
+end

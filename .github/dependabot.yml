@@ -4,6 +4,8 @@ updates:
   directory: "/"
   schedule:
     interval: weekly
+  cooldown:
+    default-days: 7
   open-pull-requests-limit: 10
   # One grouped PR per week: every ungrouped bump runs CI, Image Scan and
   # Devcontainer on each fork — ~87 billed minutes a gem on a private one.
@@ -42,6 +44,8 @@ updates:
   directory: "/"
   schedule:
     interval: weekly
+  cooldown:
+    default-days: 7
   open-pull-requests-limit: 10
   # One grouped PR per week instead of one per action. With SHA-pinned
   # `uses:` refs (33+ sites) this is what keeps the pin-update churn

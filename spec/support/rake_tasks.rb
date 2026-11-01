@@ -16,5 +16,10 @@ module RakeTasks
       Rails.application.load_tasks
       @loaded = true
     end
+
+    def invoke(name, *args)
+      Rake::Task[name].reenable
+      Rake::Task[name].invoke(*args)
+    end
   end
 end

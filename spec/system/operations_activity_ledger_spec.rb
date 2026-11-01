@@ -343,6 +343,7 @@ RSpec.describe "Operations activity ledger", type: :system do
     page.current_window.resize_to(390, 1000)
     visit operations_activity_logs_path
     within_results { expect(page).to have_css("tbody tr", minimum: 1) }
+    expect(page.evaluate_script("document.documentElement.scrollWidth")).to be <= 390
 
     click_button I18n.t("operations.activity_logs.index.ranges_menu.30d")
     expect(page).to have_css("[role=dialog]")
@@ -374,6 +375,8 @@ RSpec.describe "Operations activity ledger", type: :system do
       expect(page).to have_no_css("div[role=region] [data-slot=toolbar]")
       expect(page).to have_no_css("div[role=region] [data-slot=footer]")
     end
+    # Opening the row scrolls the caveats button under the sticky header, where a long app name overlaps it.
+    page.scroll_to(0, 0)
     expect(axe_clean_in_both_themes?).to be(true), axe_violations_in_both_themes.join("\n")
 
     visit operations_activity_logs_path(q: "nobody@example.com")

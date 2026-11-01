@@ -6,6 +6,18 @@ local:
   service: Disk
   root: <%= Rails.root.join("storage") %>
 
+# Any S3-compatible bucket; database backups land here. /docs/developer/deployment (Back up the database)
+object_storage:
+  service: S3
+  bucket: <%= ENV["OBJECT_STORAGE_BUCKET"] %>
+  region: <%= ENV["OBJECT_STORAGE_REGION"] %>
+<% if ENV["OBJECT_STORAGE_ENDPOINT"].present? %>
+  endpoint: <%= ENV["OBJECT_STORAGE_ENDPOINT"] %>
+<% end %>
+  force_path_style: <%= ENV["OBJECT_STORAGE_FORCE_PATH_STYLE"] == "true" %>
+  access_key_id: <%= Rails.application.credentials.dig(:object_storage, :access_key_id) %>
+  secret_access_key: <%= Rails.application.credentials.dig(:object_storage, :secret_access_key) %>
+
 # Use bin/rails credentials:edit to set the AWS secrets (as aws:access_key_id|secret_access_key)
 # amazon:
 #   service: S3

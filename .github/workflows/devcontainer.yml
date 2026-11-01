@@ -82,6 +82,10 @@ jobs:
               exit 1
             }
 
+            # A fork's bin/setup adds its upstream remote; in the template a refused git just reads as "not a fork".
+            echo "=== git works in the checkout ==="
+            git rev-parse HEAD
+
             # Deliberately the repo's OWN specs rather than assertions restated
             # in YAML: the libvips floor already has a tested home, and a real
             # system spec is the smallest thing that proves the browser actually

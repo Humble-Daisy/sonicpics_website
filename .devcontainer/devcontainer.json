@@ -1,6 +1,6 @@
 {
   "name": "ModelRails",
-  "image": "docker.io/library/ruby:4.0.7-slim",
+  "image": "docker.io/library/ruby:4.0.9-slim",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {},
     "ghcr.io/devcontainers/features/git:1": {},

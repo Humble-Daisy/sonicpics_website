@@ -9,7 +9,7 @@
 # `docker build --pull` to always take the newest patched base. If you also need to name the exact image
 # you shipped, pin a digest (`FROM ruby:${RUBY_VERSION}-slim@sha256:…`) and refresh it on a schedule; the
 # image scan in CI is what catches a base that has drifted into known-vulnerable either way.
-ARG RUBY_VERSION=4.0.7
+ARG RUBY_VERSION=4.0.9
 FROM ruby:${RUBY_VERSION}-slim
 
 # Apply Debian's pending security patches. `--pull` takes the newest base tag, and the tag can still be

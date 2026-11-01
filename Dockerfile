@@ -11,7 +11,7 @@
 # When invoked via Kamal, config/deploy.yml passes RUBY_VERSION as a build arg
 # so the production image always matches the version Bundler enforces in
 # Gemfile.lock (see Gemfile's `ruby file: ".tool-versions"` directive).
-ARG RUBY_VERSION=4.0.7
+ARG RUBY_VERSION=4.0.9
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
 # Rails app lives here

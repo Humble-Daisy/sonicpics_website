@@ -113,6 +113,7 @@ git branch --unset-upstream                   # or `git pull` would still pull t
 
 # Your new repository becomes origin
 git remote add origin git@github.com:YOU/myapp.git
+git config remote.origin.gh-resolved base     # gh otherwise acts on upstream: the template
 git push -u origin main
 
 # Activate the fork-owned merge driver (bin/setup also does this for you,
@@ -128,7 +129,8 @@ Two things you'll notice afterwards, both intentional:
   real URL — it makes any accidental `git push upstream` fail loudly instead of
   writing to the template.
 - Your `main` tracks `origin/main` (your repo), so plain `git pull` stays inside
-  your app. Upstream only enters when you explicitly run `git merge upstream/main`.
+  your app. Upstream only enters when you run `bin/sync`
+  ([Pull upstream updates](#pull-upstream-updates)).
 
 Finally, record the cut point in the template repo — it answers "which template
 version is myapp based on?" forever:
@@ -220,10 +222,16 @@ bin/rails credentials:edit --environment development
 bin/rails credentials:edit --environment production
 ```
 
-Add OAuth keys and `mailer.from` (structure in [Getting Started](/docs/developer/getting-started)).
-Your fork **may** commit its own `.yml.enc` blobs — normal for a private app; the
-`.key` files stay gitignored. `.kamal/secrets` reads
-`config/credentials/production.key` at deploy time.
+Add OAuth keys and `mailer.from` (structure in [Getting Started](/docs/developer/getting-started)),
+and to production the mail provider's login as `smtp.user_name` and `smtp.password`
+([Deployment](/docs/developer/deployment#4-configure-outbound-mail)) and, once
+backups go to a bucket, its key as `object_storage.access_key_id` and
+`object_storage.secret_access_key` ([Deployment](/docs/developer/deployment#move-to-a-bucket-when-the-data-matters)).
+Commit your `.yml.enc` files; the `.key` files stay gitignored. Kamal builds the
+image from a clone of the commit, so an uncommitted credentials file never
+reaches production, and the app refuses to boot without it. `.kamal/secrets`
+takes `RAILS_MASTER_KEY` from the deploying environment, else reads
+`config/credentials/production.key`.
 
 Personal data — email addresses, names, company names — is encrypted at rest
 with Active Record Encryption, and **production refuses to boot without the
@@ -246,6 +254,47 @@ email lookup. Which columns, and why some are deterministic:
 For production you'll also set `RAILS_HOST`, pick a tenancy preset
 (`WORKSPACE_ON_SIGNUP`), and choose a signup mode — see `.env.example`,
 [Presets](presets), and [Deployment](deployment).
+
+## Protect the branches
+
+The template's default flow uses three branches:
+
+| Branch | Role |
+| --- | --- |
+| `next` | Integration, and the default branch: every feature PR targets it. Deploys nowhere. |
+| `release/<name>` | A release, cut from `next` by `bin/release cut` and deployed to staging for review. Fixes and reverts land on it by PR. |
+| `main` | Production. Takes a release by PR, with merge commits only. |
+
+Once `main` is on GitHub, run:
+
+```bash
+bin/branch-rules          # one approval on every PR
+bin/branch-rules --solo   # no approval: you merge your own PRs
+```
+
+It creates `next` from `main` and makes it the default branch, turns on
+auto-merge (a PR, yours or an agent's, can be queued to merge once its checks
+pass; the rules still apply), then applies
+the rulesets in `config/github/rulesets/`. Under those rules, `next`,
+`release/**` and `main` take changes only by PR, and only after `static` and
+`test` pass on an up-to-date branch. Rerunning it updates the rulesets in
+place. It names any other ruleset on the repo, which you reconcile by hand.
+
+- **Push `main` first.** Once the rules apply, a direct push to `main` is refused.
+- **`--solo`** exists because GitHub refuses an approval from a PR's own author.
+- **No one bypasses.** A bypass, even "through pull requests only", lets an
+  admin's ordinary merge skip the approval and the up-to-date check, and nothing
+  asks first.
+- **After anything lands on `main`, merge it back into `next`** with
+  `bin/release merge-back`, which goes through a branch cut from `main`. A PR
+  whose head is `main` can't be brought up to date, since that would push to
+  `main`.
+- **Plan limits.** GitHub Free applies rulesets to public repositories only. On
+  a private one the script reports each refused ruleset and exits non-zero.
+
+Cutting, reviewing and shipping a release, hotfixes, and the merge-back are in
+[Releasing](releasing). To change the flow, edit the JSON files, or replace the
+script. `bin/fork` names it only as a next step.
 
 ## Fork-owned files
 
@@ -397,23 +446,63 @@ orphaned pages across both maps automatically.
 
 ## Pull upstream updates
 
-### 1. Look before you merge
+```bash
+bin/sync
+```
+
+`bin/sync` brings the template's newest releases into your `next`, as a PR:
+
+1. It finds the template's releases that your `next` doesn't have yet.
+2. It merges the latest one on a `sync/template-v<name>` branch.
+3. It keeps your `CHANGELOG.md`, and writes `changelog.d/template-v<name>.md`
+   with one line for each release it brings in, linking that release's notes
+   on the template's GitHub releases page.
+4. It pushes the branch and opens a PR into `next` that merges itself, with a
+   merge commit, once its checks pass. Merging it starts your next release
+   like any other PR.
+
+If `next` already has the template's latest release, it says so and stops.
+It needs a clean working tree, an `upstream` remote (`bin/setup` adds it) and
+the GitHub CLI, signed in.
+
+**A fork made before `bin/sync` existed doesn't have it yet.** Its first sync
+brings it in, so run that one from the template's copy. It needs the
+`release_flow` gem, which that sync adds to your `Gemfile`:
 
 ```bash
 git fetch upstream
-git log --oneline main..upstream/main                   # what's coming
-git log --diff-filter=R --stat main..upstream/main      # what moved — plan renames, don't discover them mid-merge
+gem install release_flow
+d=$(mktemp -d); mkdir -p $d/bin $d/lib
+for f in bin/sync lib/clean_git_env.rb lib/github_origin.rb; do git show upstream/main:$f > $d/$f; done
+ruby -e "load '$d/bin/sync'; Sync.new(root: Dir.pwd).run"
 ```
 
-Read `CHANGELOG.md` on `upstream/main` first — breaking changes and migrations
-are called out under [Unreleased]. If a change sounds structural (schema,
-`deploy.yml`), read its PR before merging, not after.
+Once its PR merges, every later sync is `bin/sync`.
+
+**Don't merge the template by hand.** Your changelog and the template's share a
+file but not their releases, and git's union merge files the template's lines
+into your shipped releases without a conflict. CI refuses that
+(`bin/release check`), and `bin/sync` exists so you never have to undo it.
+Merge sync PRs with a merge commit, never a squash: the merge is how the next
+`bin/sync` tells what you already have.
+
+### 1. Look before you sync
+
+```bash
+git fetch upstream
+git log --oneline origin/next..upstream/main                   # what's coming
+git log --diff-filter=R --stat origin/next..upstream/main      # what moved — plan renames, don't discover them mid-merge
+```
+
+Read the template's release notes on its GitHub releases page: breaking changes
+and migrations are called out there. If a change sounds structural (schema,
+`deploy.yml`), read its PR before syncing, not after.
 
 Then check whether upstream touched files **you own** — those changes will NOT
 arrive through the merge (the driver keeps yours):
 
 ```bash
-git log --oneline main..upstream/main -- \
+git log --oneline origin/next..upstream/main -- \
   app/views/pages app/controllers/pages_controller.rb \
   config/locales/en/pages.en.yml config/locales/en/brand.en.yml \
   config/routes/app.rb config/markdowndocs_categories.local.yml \
@@ -424,18 +513,16 @@ git log --oneline main..upstream/main -- \
 If a commit there looks like a fix you want, cherry-pick it after the merge:
 `git cherry-pick <sha>`, then adapt it to your version of the file.
 
-### 2. Merge on a branch
+### 2. If it stops on conflicts
 
-```bash
-git checkout -b chore/upstream-sync-$(date +%F)
-git merge upstream/main
-```
-
-### 3. If you hit conflicts
+`bin/sync` stops and names the files, with `CHANGELOG.md` already done. Resolve
+each one, `git add` it, then run `bin/sync` again: it commits the merge, pushes
+and opens the PR.
 
 | Conflict in | Resolution |
 | ----------- | ---------- |
-| Fork-owned paths | Shouldn't happen — the driver keeps yours. If it does, the driver isn't active: `git merge --abort`, run `git config merge.ours.driver true`, merge again |
+| `CHANGELOG.md` | Never — `bin/sync` keeps yours before it stops |
+| Fork-owned paths | Shouldn't happen — the driver keeps yours. If it does, the driver isn't active: `git merge --abort`, run `git config merge.ours.driver true`, then `bin/sync` again |
 | Identity values (`config/deploy.yml` service/image/volumes, `config/application.rb` module) | Keep your names; take any structural changes around them |
 | `Gemfile` | Keep **both** sides' gems, then regenerate the lockfile |
 | `Gemfile.lock` | Never hand-merge: `git checkout --theirs Gemfile.lock`, then `bundle install`, commit the regenerated result |
@@ -451,27 +538,27 @@ A conflict looks like this — your side on top, upstream's below:
     primary_cta: "Start organizing your photos"
 =======
     primary_cta: "Get started free"
->>>>>>> upstream/main
+>>>>>>> 9f3c2e1 (the template's release)
 ```
 
 Decide which line the file should have (here it's your marketing copy — keep
 yours), delete the other line and all three marker lines, then `git add` the
 file. That's the whole skill; the doctrine table tells you which side to favor.
 
-### 4. Prove the merge
+### 3. Prove it
+
+CI runs the suite on the PR. Locally, on the sync branch:
 
 ```bash
 bin/rails db:migrate    # upstream may ship migrations
-bundle exec rspec       # full suite green before the PR
+bundle exec rspec
 ```
-
-Open a pull request into your app's main branch like any other change.
 
 ### If something looks wrong after the merge
 
 - **A fork-owned file changed unexpectedly** — the driver wasn't active during
   the merge. Restore your version from before the sync:
-  `git restore --source=main <path>`, commit, then fix the driver config.
+  `git restore --source=origin/next <path>`, commit, then fix the driver config.
 - **Bundler errors** — regenerate instead of debugging the lockfile:
   `git checkout --theirs Gemfile.lock && bundle install`.
 - **Tests fail** — run the failing spec alone, then
@@ -480,9 +567,9 @@ Open a pull request into your app's main branch like any other change.
 
 ### Cadence
 
-Merge after each meaningful upstream change — don't bank up months of drift.
-Small frequent merges conflict less than one big annual one; if upstream is
-busy, a fixed weekly sync keeps every merge boring.
+Run `bin/sync` often — don't bank up months of drift. Small frequent merges
+conflict less than one big annual one; if upstream is busy, a fixed weekly
+sync keeps every merge boring.
 
 ## Contribute a fix back
 

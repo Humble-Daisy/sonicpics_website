@@ -2,8 +2,8 @@
 # Every entry needs a rationale and a `Revisit:` trigger — enforced by
 # spec/code_smells/template_invariants_spec.rb.
 
-# json 2.18.0 still ships INSIDE Ruby 4.0.7 as a default gem (re-checked on the
-# 4.0.7 bump); Gemfile.lock pins the fixed json (>= 2.19.2) and Bundler activates
+# json 2.18.0 still ships INSIDE Ruby 4.0.9 as a default gem (re-checked on the
+# 4.0.9 bump); Gemfile.lock pins the fixed json (>= 2.19.2) and Bundler activates
 # it at runtime, so the vulnerable copy is dormant until a Ruby patch replaces it.
 # Revisit: on the next Ruby 4.0.x patch (bump .tool-versions), or 2026-12-01.
 CVE-2026-33210

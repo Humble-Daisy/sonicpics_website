@@ -1351,18 +1351,56 @@ RSpec.describe "Template invariants" do
     end
   end
 
-  describe "the template ships zero encrypted credential blobs" do
-    # A committed .yml.enc is undecryptable dead weight to every fork and a
-    # guaranteed merge conflict whenever upstream rotates a secret. Forks
-    # generate per-environment credentials on day one (README "Forking this
-    # template") and may commit their own blobs in their private repos.
-    it "tracks no credential blobs or keys in git" do
-      tracked = IO.popen(clean_git_env, [ "git", "-C", root.to_s, "ls-files", "config" ], &:read)
-        .to_s.lines.map(&:strip)
-      offenders = tracked.grep(/\.yml\.enc\z|master\.key\z|credentials\/.*\.key\z/)
-      expect(offenders).to be_empty,
-        "expected no encrypted credential blobs or keys tracked in git, found: " \
-        "#{offenders.join(', ')}. The template ships zero credentials; see README."
+  describe "credentials in git: keys never, encrypted files only from a fork" do
+    let(:tracked) { IO.popen(clean_git_env, [ "git", "-C", root.to_s, "ls-files", "config" ], &:read).to_s.lines.map(&:strip) }
+
+    it "tracks no credentials key" do
+      keys = tracked.grep(/master\.key\z|credentials\/.*\.key\z/)
+      expect(keys).to be_empty, "expected no credentials key tracked in git, found: #{keys.join(', ')}"
+    end
+
+    it "ships no encrypted credentials from the template itself" do
+      skip "fork — a fork commits the encrypted credentials its image is built from" if root.join(".fork.yml").exist?
+
+      blobs = tracked.grep(/\.yml\.enc\z/)
+      expect(blobs).to be_empty, "expected the template to track no encrypted credentials, found: #{blobs.join(', ')}"
+    end
+  end
+
+  describe "a deployer's local secrets stay out of git and out of the image" do
+    let(:local_secrets) { %w[config/master.key config/credentials/production.key .env fnox.local.toml age.txt] }
+    let(:dockerignore_rules) do
+      File.readlines(root.join(".dockerignore"), chomp: true).grep_v(/\A\s*(#|\z)/)
+    end
+
+    def git_ignores?(path)
+      system(clean_git_env, "git", "-C", root.to_s, "check-ignore", "--quiet", path)
+    end
+
+    def docker_excludes?(path)
+      dockerignore_rules.reduce(false) do |excluded, rule|
+        pattern = rule.delete_prefix("!").delete_prefix("/")
+        File.fnmatch?(pattern, path, File::FNM_PATHNAME | File::FNM_DOTMATCH) ? !rule.start_with?("!") : excluded
+      end
+    end
+
+    it "git ignores every one of them" do
+      tracked_if_created = local_secrets.reject { |path| git_ignores?(path) }
+      expect(tracked_if_created).to be_empty,
+        "expected .gitignore to cover #{tracked_if_created.join(', ')}"
+    end
+
+    it "still lets an app commit the encrypted files it deploys from" do
+      encrypted = %w[fnox.toml config/credentials/production.yml.enc config/credentials/staging.yml.enc config/credentials.yml.enc]
+      ignored = encrypted.select { |path| git_ignores?(path) }
+      expect(ignored).to be_empty,
+        "expected #{ignored.join(', ')} to stay committable: Kamal builds the image from a clone of the commit"
+    end
+
+    it "leaves every one of them out of the Docker build context" do
+      copied_into_image = local_secrets.reject { |path| docker_excludes?(path) }
+      expect(copied_into_image).to be_empty,
+        "expected .dockerignore to exclude #{copied_into_image.join(', ')}: `COPY . .` would bake them into the image"
     end
   end
 
@@ -1505,6 +1543,11 @@ RSpec.describe "Template invariants" do
         "the template repo itself must never set the driver"
     end
 
+    it "makes origin gh's default from bin/setup, since gh would pick the upstream remote it adds" do
+      expect(File.read(Rails.root.join("bin/setup"))).to include("git config remote.origin.gh-resolved base"),
+        "a teammate's gh commands in a fork clone would act on the template"
+    end
+
     it "marks the fork extension point in db/seeds.rb" do
       expect(File.read(Rails.root.join("db/seeds.rb")))
         .to include("Fork seam: add your app's domain seeds BELOW this line"),
@@ -1621,6 +1664,59 @@ RSpec.describe "Template invariants" do
       expect(offenders).to be_empty,
         "expected every external `uses:` pinned as owner/repo@<40-hex-sha> # <tag>, got:\n" +
         offenders.map { |site, ref| "  #{site} #{ref}" }.join("\n")
+    end
+  end
+
+  describe "no workflow runs on pull_request_target" do
+    let(:triggers_by_workflow) do
+      Dir[root.join(".github/workflows/*.{yml,yaml}").to_s].to_h do |path|
+        on = YAML.safe_load(File.read(path), aliases: true).then { |workflow| workflow[true] || workflow["on"] }
+        [ Pathname(path).relative_path_from(root).to_s, Array(on.is_a?(Hash) ? on.keys : on) ]
+      end
+    end
+
+    it "reads a trigger from every workflow" do
+      expect(triggers_by_workflow.reject { |_path, triggers| triggers.any? }.keys).to be_empty
+    end
+
+    it "keeps every workflow off the trigger that pairs a writable token with a pull request's code" do
+      offenders = triggers_by_workflow.select { |_path, triggers| triggers.include?("pull_request_target") }.keys
+      expect(offenders).to be_empty,
+        "expected no workflow on pull_request_target, found: #{offenders.join(', ')}"
+    end
+  end
+
+  describe "jactionlint audits the workflows at one version, in CI and before a push" do
+    let(:audit_steps) do
+      YAML.safe_load(File.read(root.join(".github/workflows/workflow_audit.yml")), aliases: true)
+        .fetch("jobs").values.flat_map { |job| job["steps"] }
+    end
+    let(:mise_tools) { File.read(root.join("mise.toml")).scan(/^([\w-]+) = "([^"]+)"$/).to_h }
+
+    it "pins jactionlint and the shellcheck it runs to exact versions that mise.lock locks" do
+      expect(mise_tools.keys).to include("jactionlint", "shellcheck")
+      mise_lock = File.read(root.join("mise.lock"))
+      mise_tools.each do |tool, version|
+        expect(version).to match(/\A\d+\.\d+\.\d+\z/), "expected mise.toml to pin #{tool} to an exact X.Y.Z"
+        expect(mise_lock).to include(%([[tools.#{tool}]]\nversion = "#{version}")),
+          "expected mise.lock to lock #{tool} #{version}; run `mise lock #{mise_tools.keys.join(' ')}`"
+      end
+    end
+
+    it "installs exactly mise.toml's tools in CI, from the lockfile, and runs the online checks" do
+      install = audit_steps.find { |step| step["uses"].to_s.start_with?("jdx/mise-action@") }
+      lint = audit_steps.find { |step| step["run"].to_s.include?("jactionlint") }
+
+      expect(install&.dig("with", "install_args").to_s.split).to match_array(mise_tools.keys),
+        "expected jdx/mise-action to install mise.toml's tools alone, not compile the .tool-versions Ruby"
+      expect(lint&.dig("run")).to include("--online")
+      expect(lint&.dig("env", "GITHUB_TOKEN")).to eq("${{ github.token }}")
+    end
+
+    it "runs the same jactionlint before a push that changes .github" do
+      command = YAML.safe_load(File.read(root.join("lefthook.yml")), aliases: true).dig("pre-push", "commands", "jactionlint") || {}
+      expect(command["run"].to_s).to start_with("mise exec -- jactionlint")
+      expect(command["glob"].to_s).to include(".github/**")
     end
   end
 
@@ -1755,6 +1851,7 @@ RSpec.describe "Template invariants" do
     end
 
     it "the Hot Cell docs sample keeps every volume deploy.yml already mounts" do
+      skip "fork — bin/fork renames deploy.yml's volumes and leaves the template's docs as they are" if root.join(".fork.yml").exist?
       doc = File.read(root.join("app/docs/developer/hot-cell.md"))
       sample = doc.scan(/^ *```yaml\n(.*?)^ *```/m).flatten.find { |block| block.include?("accessories:") }
       existing = YAML.safe_load(File.read(root.join("config/deploy.yml")), aliases: true, permitted_classes: [ Symbol ])["volumes"]

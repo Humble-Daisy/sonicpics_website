@@ -66,6 +66,16 @@ pre-push:
       skip:
         - merge
         - rebase
+    jactionlint:
+      # The workflow audit's linter, offline here; CI adds the online checks. Same inputs as its paths.
+      tags: style
+      priority: 6
+      files: git diff --name-only origin/main...HEAD
+      glob: "{.github/**,mise.toml,mise.lock}"
+      run: mise exec -- jactionlint
+      skip:
+        - merge
+        - rebase
     rspec:
       tags: test
       priority: 7
