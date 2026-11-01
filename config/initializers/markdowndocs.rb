@@ -22,7 +22,7 @@ Markdowndocs.configure do |config|
     "Presets (Tenancy)"          => %w[developer/presets developer/presets-solo developer/presets-single-tenant developer/presets-open-saas developer/presets-none],
     "Architecture & Data Model"  => %w[developer/architecture developer/application-flows developer/accounts-and-identity developer/identity-system developer/membership-lifecycle],
     "Building & Extending"       => %w[developer/extending developer/forking developer/components developer/ui-patterns developer/form-drafts developer/i18n developer/machine-clients],
-    "Operations"                 => %w[developer/operations developer/deployment developer/background-jobs developer/security developer/hot-cell],
+    "Operations"                 => %w[developer/operations developer/deployment developer/releasing developer/background-jobs developer/security developer/hot-cell],
     "Quality & Testing"          => %w[developer/testing developer/accessibility developer/qa-flows developer/conventions],
     "Auth & Notifications (internals)" => %w[developer/passkeys developer/notifications],
     "Troubleshooting"            => %w[developer/troubleshooting]

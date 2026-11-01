@@ -43,7 +43,8 @@ module UI
         raise ArgumentError, "Unknown scroll_area orientation #{@orientation.inspect} (expected one of #{ORIENTATIONS.keys.inspect})"
       end
 
-      attrs = { class: cn(overflow, SCROLLBAR_CLS, focus_cls, @max_h, @max_w, @extra_class) }
+      # relative: an absolute child (an sr-only label) would otherwise escape the clip and widen the page.
+      attrs = { class: cn("relative", overflow, SCROLLBAR_CLS, focus_cls, @max_h, @max_w, @extra_class) }
       attrs.merge!(region_attrs) if @focusable
 
       content_tag(:div, content, **attrs, **@html_attrs)

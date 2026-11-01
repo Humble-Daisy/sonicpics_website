@@ -69,13 +69,19 @@ stop_timeout: 45
 env:
   secret:
     - RAILS_MASTER_KEY
-    # Outbound mail credentials, referenced from .kamal/secrets. For Postmark both
-    # are the Server API token; for SES over SMTP they are the SMTP credentials.
-    - SMTP_USERNAME
-    - SMTP_PASSWORD
   clear:
-    # Outbound mail: production refuses to boot without a mail server; Postmark is the
-    # shipped default and any SMTP provider is a swap. Recipes: /docs/developer/deployment.
+    # RAILS_HOST: app.yourdomain.com   # required; production refuses to boot without it
+
+    # Daily backups of the database and uploads, to a folder or a bucket: /docs/developer/deployment
+    # BACKUP_PATH: /backups               # the folder mounted under volumes: below
+
+    # BACKUP_SCHEDULE: every day at 2am   # any Solid Queue schedule
+
+    # OBJECT_STORAGE_BUCKET: yourapp-backups   # or a bucket, its key in credentials (object_storage.*)
+    # OBJECT_STORAGE_REGION: eu-central-003
+
+    # Outbound mail: the server here, its login in credentials (smtp.user_name, smtp.password).
+    # Production refuses to boot without both. Recipes: /docs/developer/deployment.
     SMTP_ADDRESS: smtp.postmarkapp.com
     SMTP_PORT: 587
     # MAIL_FROM: hello@app.yourdomain.com   # default: noreply@RAILS_HOST
@@ -124,6 +130,7 @@ aliases:
 # Recommended to change this to a mounted volume path that is backed up off server.
 volumes:
   - "sonicpics_website_storage:/rails/storage"
+  # - "/srv/backups:/backups"   # the BACKUP_PATH folder, writable by uid 1000
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old
@@ -140,7 +147,7 @@ builder:
   # Pass the Ruby version through so the production image always matches the
   # version Bundler enforces via Gemfile.lock. Keep in sync with .tool-versions.
   args:
-    RUBY_VERSION: "4.0.7"
+    RUBY_VERSION: "4.0.9"
 
   # secrets:
   #   - GITHUB_TOKEN

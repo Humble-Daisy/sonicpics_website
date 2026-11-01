@@ -50,6 +50,7 @@ FileUtils.chdir APP_ROOT do
     end
 
     system! "git config merge.ours.driver true"
+    system! "git config remote.origin.gh-resolved base" if system(CleanGitEnv::HASH, "git remote get-url origin", out: File::NULL, err: File::NULL)
 
     # Validated here, not just where it was written: .fork.yml is committed and
     # hand-editable, so an unchecked value would propagate a typo into every

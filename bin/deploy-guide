@@ -23,11 +23,12 @@ GUIDES = {
        documented inline. Set service/image/volume names (see /docs/developer/forking),
        your server's IP or hostname, and proxy.host.
     3. Generate production credentials (bin/rails credentials:edit --environment
-       production); .kamal/secrets reads config/credentials/production.key.
+       production); .kamal/secrets takes RAILS_MASTER_KEY from the environment,
+       else reads config/credentials/production.key.
     4. Outbound mail: sign-in is an email, and the app refuses to boot without
-       it. deploy.yml already points SMTP_ADDRESS at Postmark; export
-       SMTP_USERNAME and SMTP_PASSWORD (for Postmark, both are the Server API
-       token) where .kamal/secrets can read them. Other providers: "Configure
+       it. deploy.yml already points SMTP_ADDRESS at Postmark; put the login in
+       the production credentials as smtp.user_name and smtp.password (for
+       Postmark, both are the Server API token). Other providers: "Configure
        outbound mail" in /docs/developer/deployment.
     5. First deploy: bin/kamal setup. After that: bin/kamal deploy.
 
@@ -71,9 +72,10 @@ GUIDES = {
     - SOLID_QUEUE_IN_PUMA=true — without it NO background jobs run (so no
       emails). Alternative: run bin/jobs as a separate worker process instead.
     - RAILS_HOST: your app's hostname (mailer links; defaults to example.com!)
-    - SMTP_ADDRESS, SMTP_USERNAME, SMTP_PASSWORD: your mail provider. Sign-in
-      is an email, so the app refuses to boot without them ("Configure
-      outbound mail" in /docs/developer/deployment)
+    - SMTP_ADDRESS: your mail provider's server, with its login in the
+      production credentials as smtp.user_name and smtp.password. Sign-in is
+      an email, so the app refuses to boot without them ("Configure outbound
+      mail" in /docs/developer/deployment)
 
     Optional tuning (working defaults)
     ----------------------------------

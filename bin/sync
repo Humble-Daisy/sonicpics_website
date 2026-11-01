@@ -1,0 +1,135 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Brings the template's newest releases into a fork's next as a PR: /docs/developer/forking.
+# The fork's CHANGELOG.md stays its own; a changelog.d fragment links each release brought in.
+
+require "fileutils"
+require "open3"
+require "yaml"
+require_relative "../lib/clean_git_env"
+require_relative "../lib/github_origin"
+require "release_flow"
+
+class Sync
+  class Error < StandardError; end
+
+  CLEAN_GIT_ENV = ::CleanGitEnv::HASH
+  BRANCH_PREFIX = "sync/template-v"
+
+  def initialize(root: Dir.pwd)
+    @root = File.expand_path(root)
+  end
+
+  def run
+    merging? ? finish : start
+  end
+
+  private
+
+  def start
+    template = template_repo
+    raise Error, "there are uncommitted changes; commit or stash them, so the merge holds only the template's" unless git("status", "--porcelain", "--untracked-files=no").empty?
+
+    git("fetch", "-q", "origin")
+    releases = template_releases
+    raise Error, "the template has no releases to bring in yet" if releases.empty?
+
+    latest, commit = releases.last
+    git("fetch", "-q", "--no-tags", "upstream", "refs/tags/v#{latest}")
+    added = releases.reject { |_, c| ancestor?(c, "origin/next") }
+    return say("next already has the template's release v#{latest}.") if added.empty?
+
+    branch = "#{BRANCH_PREFIX}#{latest}"
+    unless git("ls-remote", "--heads", "origin", branch).empty?
+      raise Error, "#{branch} is already on origin, so its PR brings this release in. Merge it, or delete the branch to start over."
+    end
+
+    say("== Bring in the template's release v#{latest} ==")
+    git("switch", "-q", "-C", branch, "origin/next")
+    git_ok?("merge", "-q", "--no-ff", "--no-commit", "-m", "Bring in the template's release v#{latest}", commit)
+    keep_our_changelog(latest, added.map { |name, _| "- Brings in the template's release [v#{name}](https://github.com/#{template}/releases/tag/v#{name})." })
+    if (stuck = unmerged).any?
+      raise Error, "the merge stopped on conflicts in:\n  #{stuck.join("\n  ")}\n" \
+                   "CHANGELOG.md is done. Resolve those files (the forking guide's table says which side to keep), " \
+                   "git add each, then run bin/sync again."
+    end
+
+    finish
+  end
+
+  def finish
+    branch = git("branch", "--show-current")
+    raise Error, "a merge is in progress on #{branch}, which bin/sync didn't start; finish or abort it first" unless branch.start_with?(BRANCH_PREFIX)
+    raise Error, "still conflicted: #{unmerged.join(', ')}. Resolve and git add them, then run bin/sync again." if unmerged.any?
+
+    git("commit", "-q", "--no-edit")
+    git("push", "-q", "-u", "origin", branch)
+    latest = branch.delete_prefix(BRANCH_PREFIX)
+    url = gh("pr", "create", "--base", "next", "--head", branch, "--title", "Bring in the template's release v#{latest}",
+             "--body-file", "-", stdin: "Brings `next` up to the template's release v#{latest}; a changelog.d fragment links its notes.\n\n" \
+                                       "Merge with a merge commit, not a squash: the merge is how the next `bin/sync` tells what's already here.\n")
+    _, auto = gh("pr", "merge", url, "--auto", "--merge", status: true)
+    say("  → #{url}")
+    say(auto ? "  It merges, with a merge commit, once its checks pass." : "  ! Auto-merge is off: merge it with a merge commit, not a squash.")
+  end
+
+  # Union-merging two changelogs files the template's lines into the fork's shipped releases.
+  def keep_our_changelog(latest, entries)
+    fragment = "#{ReleaseFlow::Changelog::FRAGMENTS}/template-v#{latest}.md"
+    File.write(File.join(@root, "CHANGELOG.md"), git("show", "HEAD:CHANGELOG.md", strip: false))
+    FileUtils.mkdir_p(File.join(@root, ReleaseFlow::Changelog::FRAGMENTS))
+    File.write(File.join(@root, fragment), ReleaseFlow::Changelog.fragment("Changed", entries))
+    git("add", "CHANGELOG.md", fragment)
+  end
+
+  def template_repo
+    fork_file = File.join(@root, ".fork.yml")
+    raise Error, "no .fork.yml here: bin/sync brings template releases into a fork that bin/fork made" unless File.exist?(fork_file)
+    raise Error, "no upstream remote: bin/setup adds it" unless git_ok?("remote", "get-url", "upstream")
+
+    YAML.safe_load_file(fork_file).to_h["template_url"].to_s[GithubOrigin::URL, :repo] or
+      raise Error, "template_url in .fork.yml isn't a GitHub repository"
+  end
+
+  def template_releases
+    refs = git("ls-remote", "--tags", "upstream").lines.map(&:split)
+    refs.sort_by { |_, ref| ref.end_with?("^{}") ? 1 : 0 }
+        .to_h { |sha, ref| [ ref[%r{\Arefs/tags/v(#{ReleaseFlow::Changelog::NAME})(?:\^\{\})?\z}, 1], sha ] }
+        .except(nil)
+        .sort_by { |name, _| name.split("-").then { |date, n| [ date, n.to_i ] } }
+  end
+
+  def merging? = git_ok?("rev-parse", "-q", "--verify", "MERGE_HEAD")
+  def unmerged = git("diff", "--name-only", "--diff-filter=U").lines(chomp: true)
+  def ancestor?(older, newer) = git_ok?("merge-base", "--is-ancestor", older, newer)
+  def say(msg) = puts(msg)
+
+  def git(*args, strip: true)
+    out, err, status = Open3.capture3(CLEAN_GIT_ENV, "git", "-C", @root, *args)
+    raise Error, "git #{args.first} failed: #{err.strip}" unless status.success?
+
+    strip ? out.strip : out
+  end
+
+  def git_ok?(*args) = Open3.capture3(CLEAN_GIT_ENV, "git", "-C", @root, *args).last.success?
+
+  def gh(*args, stdin: nil, status: false)
+    repo = GithubOrigin.repo(@root) or raise Error, "origin isn't a GitHub repository, so there's no telling where to open the PR"
+    out, err, result = Open3.capture3(CLEAN_GIT_ENV.merge("GH_REPO" => repo), "gh", *args, stdin_data: stdin.to_s, chdir: @root)
+    return [ out.strip, result.success? ] if status
+    raise Error, "gh #{args.first(2).join(' ')} failed: #{err.strip}" unless result.success?
+
+    out.strip
+  rescue Errno::ENOENT
+    raise Error, "bin/sync needs the GitHub CLI (gh), signed in"
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+  begin
+    Sync.new(root: File.expand_path("..", __dir__)).run
+  rescue Sync::Error, ReleaseFlow::Error => e
+    abort("bin/sync: #{e.message}")
+  end
+end

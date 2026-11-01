@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require "yaml"
 
 RSpec.describe "config/recurring.yml", type: :config do
-  let(:config) { YAML.load_file(Rails.root.join("config/recurring.yml")) }
+  let(:config) { ActiveSupport::ConfigurationFile.parse(Rails.root.join("config/recurring.yml")) }
   let(:production) { config.fetch("production") }
 
   it "schedules WorkspaceInvitationExpiringSweepJob every 6 hours" do
@@ -19,6 +18,23 @@ RSpec.describe "config/recurring.yml", type: :config do
     expect(entry["class"]).to eq("WorkspaceCapacitySweepJob")
     expect(entry["queue"]).to eq("default")
     expect(entry["schedule"]).to match(/every 12 hours/i)
+  end
+
+  it "backs up every day by default, on a schedule Solid Queue can read" do
+    entry = production.fetch("database_backup")
+    expect(entry["class"]).to eq("DatabaseBackupJob")
+    expect(entry["queue"]).to eq("default")
+    expect(entry["schedule"]).to eq("every day at 2am")
+    expect(Fugit.parse(entry["schedule"])).to be_a(Fugit::Cron)
+  end
+
+  it "takes the backup schedule from BACKUP_SCHEDULE when it is set" do
+    original = ENV["BACKUP_SCHEDULE"]
+    ENV["BACKUP_SCHEDULE"] = "every hour"
+
+    expect(production.dig("database_backup", "schedule")).to eq("every hour")
+  ensure
+    ENV["BACKUP_SCHEDULE"] = original
   end
 
   it "preserves the existing solid-queue clear-finished-jobs schedule" do

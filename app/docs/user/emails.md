@@ -110,35 +110,25 @@ sign-in options and [Application Flows](/docs/developer/application-flows) for t
 
 `ApplicationMailer` resolves the from address in this order:
 
-1. `Rails.application.credentials.dig(:mailer, :from)` — set this for production
-2. `noreply@{default_url_options[:host]}` — automatic fallback
-3. `noreply@example.com` — final fallback (makes it obvious setup is needed)
+1. `MAIL_FROM` in the environment
+2. `Rails.application.credentials.dig(:mailer, :from)`
+3. `noreply@` the mailer's default host (`RAILS_HOST`)
 
 ### SMTP Setup
 
-Configure SMTP credentials in Rails encrypted credentials (per-environment):
+Where mail goes comes from the environment (`SMTP_ADDRESS`, `SMTP_PORT`,
+`SMTP_DOMAIN`); the login lives in the per-environment credentials:
 
 ```yaml
 # bin/rails credentials:edit --environment production
 smtp:
-  address: smtp.example.com
-  port: 587
   user_name: your-user
   password: your-password
-  authentication: plain
 ```
 
-Then reference them in `config/environments/production.rb`:
-
-```ruby
-config.action_mailer.smtp_settings = {
-  address: credentials.dig(:smtp, :address),
-  port: credentials.dig(:smtp, :port),
-  user_name: credentials.dig(:smtp, :user_name),
-  password: credentials.dig(:smtp, :password),
-  authentication: credentials.dig(:smtp, :authentication)
-}
-```
+`lib/mail_delivery.rb` builds `config.action_mailer.smtp_settings` from both,
+and production refuses to boot when either is missing. Provider recipes:
+[Deployment](/docs/developer/deployment#4-configure-outbound-mail).
 
 ### Default URL Host
 

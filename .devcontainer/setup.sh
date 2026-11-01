@@ -32,6 +32,10 @@ else
   echo "(.env already exists — leaving it)"
 fi
 
+echo "=== Trusting the checkout ==="
+# The checkout is mounted from the host under another owner, so git refuses it ("dubious ownership").
+git config --global --get-all safe.directory | grep -Fqx "$PWD" || git config --global --add safe.directory "$PWD"
+
 echo "=== Running bin/setup ==="
 # bin/setup is the canonical Rails entry point. It handles bundle install,
 # db:prepare and asset clobber idempotently. --skip-server prevents it from

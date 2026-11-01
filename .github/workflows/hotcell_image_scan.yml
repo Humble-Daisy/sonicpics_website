@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: hotcell-image-scan-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   scan_hotcell_image:
     if: github.event_name != 'schedule' || vars.HOTCELL_SCAN == 'true'

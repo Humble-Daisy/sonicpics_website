@@ -13,9 +13,11 @@ RSpec.describe "Documentation cited paths" do
       "app/models/concerns/noticed/deliverable.rb" => "inside the noticed 3.0.0 gem, named beside it",
       "app/models/ssrf_protection.rb" => "Fizzy's file, cited as the port source for #658",
       "app/models/webhook/delivery.rb" => "Fizzy's file, the caller of that port source",
-      "config/credentials.yml.enc" => "gitignored; a fork generates it with credentials:edit",
+      "config/credentials.yml.enc" => "the template ships none; a fork generates and commits its own",
       "config/master.key" => "gitignored; every checkout keeps its own",
       "config/credentials/production.key" => "gitignored; a deployment keeps its own",
+      "config/credentials/production.yml.enc" => "the template ships none; a fork generates and commits its own",
+      "config/credentials/staging.yml.enc" => "the template ships none; a fork with staging commits its own",
       "app/assets/builds/tailwind.css" => "a build artifact; tailwindcss:build writes it"
     }
   end

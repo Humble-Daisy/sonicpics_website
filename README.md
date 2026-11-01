@@ -4,7 +4,7 @@ A multi-tenant SaaS starter kit built on Rails 8.1.
 
 ## Tech Stack
 
-- **Framework:** Rails 8.1, Ruby 4.0.7
+- **Framework:** Rails 8.1, Ruby 4.0.9
 - **Database:** SQLite (Solid Queue/Cache/Cable in-process)
 - **Frontend:** TailwindCSS 4, Turbo, Stimulus
 - **Assets:** Propshaft, Importmaps
@@ -16,7 +16,7 @@ A multi-tenant SaaS starter kit built on Rails 8.1.
 - **Security:** Rate limiting, security headers, CSP, Pwned password check
 - **Deployment:** Kamal → GitHub Container Registry; the production image build is checked on pull requests that change a build input, on every push to `main`, and by the pre-push hook
 - **Version Management:** [mise](https://mise.jdx.dev/) (see `.tool-versions`; `Gemfile` reads from it so Bundler enforces the Ruby version everywhere)
-- **Dev Container:** Optional VS Code Dev Container ships with `ruby:4.0.7-slim` base (matches production), `docker-outside-of-docker` for in-container `kamal deploy`, named bundle cache volume
+- **Dev Container:** Optional VS Code Dev Container ships with `ruby:4.0.9-slim` base (matches production), `docker-outside-of-docker` for in-container `kamal deploy`, named bundle cache volume
 
 ## Setup
 
@@ -70,13 +70,13 @@ bin/rails credentials:edit --environment development
 Add the following structure:
 
 ```yaml
-google:
-  client_id: your_google_client_id
-  client_secret: your_google_client_secret
-
-github:
-  client_id: your_github_client_id
-  client_secret: your_github_client_secret
+oauth:
+  google:
+    client_id: your_google_client_id
+    client_secret: your_google_client_secret
+  github:
+    client_id: your_github_client_id
+    client_secret: your_github_client_secret
 ```
 
 OAuth is optional — email/password sign-up works without it.

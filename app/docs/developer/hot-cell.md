@@ -28,7 +28,7 @@ The attachment guard (`spec/code_smells/attachments_are_validated_spec.rb`, see 
 ## Prerequisites
 
 - **Rails with the variant-processor seam.** `config.active_storage.variant_processor` accepts a class from rails/rails#58384, which is on Rails `main` and unreleased. This template tracks `main`; a fork on a released Rails waits for 8.2.
-- **Ruby 3.3 or newer** for the gems; the template runs 4.0.7.
+- **Ruby 3.3 or newer** for the gems; the template runs 4.0.9.
 - **A registry the host can pull from.** Kamal doesn't build or deploy accessory images, so the cell image has to be pushed somewhere. The template's default `localhost:5555` registry can't serve an accessory; use GitHub Container Registry or another remote one ([Deployment](/docs/developer/deployment)).
 
 ## How it is wired

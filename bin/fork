@@ -32,6 +32,7 @@ class ForkFlow
   TEMPLATE_MODULE = "ModelrailsBase"
   TEMPLATE_BRAND  = "ModelRails"
   FORK_FILE       = ".fork.yml"
+  CHANGELOG       = "CHANGELOG.md"
 
   # Anchored on a path separator so a fork of your own named e.g.
   # "my_modelrails_base" is never mistaken for the template and silently
@@ -65,6 +66,7 @@ class ForkFlow
   SUBSTITUTIONS = {
     "config/application.rb"            => [ [ "module #{TEMPLATE_MODULE}", :module_decl ] ],
     "config/deploy.yml"                => [ [ TEMPLATE_TOKEN, :snake ] ],
+    "config/deploy.staging.yml"        => [ [ TEMPLATE_TOKEN, :snake ] ],
     "config/locales/en/brand.en.yml"   => [ [ %("#{TEMPLATE_BRAND}), :open_quoted_title ] ],
     "config/locales/en/pages.en.yml"   => [
       [ TEMPLATE_BRAND, :title ],
@@ -104,7 +106,7 @@ class ForkFlow
   # Paths that reference the template by name forever, so the verify sweep must
   # not report them.
   TEMPLATE_OWNED_PATHS = [
-    %r{\Aapp/docs/}, %r{\Aspec/}, %r{\ACHANGELOG\.md\z}, %r{\AGemfile(\.lock)?\z},
+    %r{\Aapp/docs/}, %r{\Aspec/}, %r{\AGemfile(\.lock)?\z},
     %r{\Abin/}, %r{\A\.gitattributes\z}, %r{\Avendor/}, %r{\A\.fork\.yml\z}
   ].freeze
 
@@ -371,6 +373,10 @@ class ForkFlow
       @todos << "Add your repository (create it EMPTY on GitHub first — no README/license):\n" \
                 "     git remote add origin git@github.com:YOU/#{snake}.git && git push -u origin #{current_branch}"
     end
+    # gh otherwise prefers the remote named upstream: the template.
+    sh("git", "-C", @root, "config", "remote.origin.gh-resolved", "base") if origin_present || @opts[:origin]
+    @todos << "Once main is on GitHub, protect the branches: bin/branch-rules " \
+              "(add --solo if you merge your own PRs; /docs/developer/forking)"
 
     @todos << "Record the cut point, in your TEMPLATE checkout:\n" \
               "     git tag forks/#{snake}-baseline main && git push origin forks/#{snake}-baseline"
@@ -436,7 +442,10 @@ class ForkFlow
     @todos << "Name your nouns, if the product's aren't workspace/project: config/vocabulary.local.yml " \
               "(fork-owned — every template string follows, and so do yours when they say %{project}, not the word)."
 
-    commit!("Rename identity: #{title}", FORK_FILE, *RENAME_FILES)
+    act("start #{CHANGELOG} clean (the template's releases stay on its releases page; bin/sync links each one it brings in)")
+    atomic_write(path_to(CHANGELOG), "# Changelog\n\nAll notable changes to #{title} are documented here.\n\n## [Unreleased]\n") unless dry_run?
+
+    commit!("Rename identity: #{title}", FORK_FILE, CHANGELOG, *RENAME_FILES)
   end
 
   def step_preset!(preset)

@@ -1,0 +1,98 @@
+name: Next release
+
+# Starts the next release when staging is free: /docs/developer/releasing (When a release starts).
+on:
+  pull_request:
+    types: [ closed ]
+    branches: [ next ]
+  # Safe: cut acts only on a push to next, checks next out by name, and reads only the run's event and result.
+  workflow_run: # jactionlint ignore=dangerous-triggers
+    workflows: [ CI ]
+    types: [ completed ]
+    branches: [ next ]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: >-
+      vars.AUTO_RELEASE == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    concurrency:
+      group: next-release-prepare
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require the release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error title=RELEASE_TOKEN isn't set::AUTO_RELEASE is on, but this repository has no RELEASE_TOKEN secret, so no release can start. Add one as /docs/developer/releasing says under \"Set up the release token\", or set AUTO_RELEASE to false."
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: next
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+        with:
+          bundler-cache: true
+
+      - name: Name the next release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          bin/release prepare --if-needed
+
+  cut:
+    if: >-
+      vars.AUTO_RELEASE == 'true' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure')
+    concurrency:
+      group: next-release-cut
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require the release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error title=RELEASE_TOKEN isn't set::AUTO_RELEASE is on, but this repository has no RELEASE_TOKEN secret, so no release can start. Add one as /docs/developer/releasing says under \"Set up the release token\", or set AUTO_RELEASE to false."
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: next
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+        with:
+          bundler-cache: true
+
+      - name: Cut the release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          gh auth setup-git
+          bin/release cut --if-needed

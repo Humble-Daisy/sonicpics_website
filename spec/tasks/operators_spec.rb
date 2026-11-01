@@ -4,16 +4,11 @@ require "rake"
 RSpec.describe "operators rake tasks" do
   before(:all) { RakeTasks.load_once }
 
-  def run_task(name, *args)
-    Rake::Task[name].reenable
-    Rake::Task[name].invoke(*args)
-  end
-
   describe "operators:grant" do
     it "grants an operatorship with no granter and writes the audit row" do
       user = create(:user)
 
-      expect { run_task("operators:grant", user.email_address) }
+      expect { RakeTasks.invoke("operators:grant", user.email_address) }
         .to change { user.reload.operator? }.from(false).to(true)
         .and change { ActivityLog.where(action: "operatorship.granted").count }.by(1)
 
@@ -25,13 +20,13 @@ RSpec.describe "operators rake tasks" do
       user = create(:user)
       Operatorship.grant!(user: user)
 
-      expect { run_task("operators:grant", user.email_address) }
+      expect { RakeTasks.invoke("operators:grant", user.email_address) }
         .to change(Operatorship, :count).by(0)
         .and change(ActivityLog, :count).by(0)
     end
 
     it "aborts on an unknown email" do
-      expect { run_task("operators:grant", "nobody@example.com") }.to raise_error(SystemExit)
+      expect { RakeTasks.invoke("operators:grant", "nobody@example.com") }.to raise_error(SystemExit)
     end
 
     # An operator typed the address on the command line — the same vouching
@@ -41,7 +36,7 @@ RSpec.describe "operators rake tasks" do
       user = create(:user, :no_authentications)
       expect(user.can_invite?).to be(false)
 
-      run_task("operators:grant", user.email_address)
+      RakeTasks.invoke("operators:grant", user.email_address)
 
       auth = user.authentications.email.sole
       expect(auth.email).to eq(user.email_address)
@@ -53,7 +48,7 @@ RSpec.describe "operators rake tasks" do
       user = create(:user, :no_authentications)
       Operatorship.grant!(user: user)
 
-      expect { run_task("operators:grant", user.email_address) }
+      expect { RakeTasks.invoke("operators:grant", user.email_address) }
         .to change { user.reload.can_invite? }.from(false).to(true)
     end
 
@@ -63,7 +58,7 @@ RSpec.describe "operators rake tasks" do
       user = create(:user, :no_authentications)
       user.authentications.create!(provider: "email", email: user.email_address)
 
-      run_task("operators:grant", user.email_address)
+      RakeTasks.invoke("operators:grant", user.email_address)
 
       expect(user.authentications.email.sole).to be_pending
       expect(user.reload.can_invite?).to be(false)
@@ -75,7 +70,7 @@ RSpec.describe "operators rake tasks" do
       user = create(:user)
       Operatorship.grant!(user: user)
 
-      expect { run_task("operators:revoke", user.email_address) }
+      expect { RakeTasks.invoke("operators:revoke", user.email_address) }
         .to change { user.reload.operator? }.from(true).to(false)
         .and change { ActivityLog.where(action: "operatorship.revoked").count }.by(1)
     end
@@ -86,7 +81,7 @@ RSpec.describe "operators rake tasks" do
       user = create(:user)
       Operatorship.grant!(user: user)
 
-      expect { run_task("operators:list") }.to output(/#{Regexp.escape(user.email_address)}/).to_stdout
+      expect { RakeTasks.invoke("operators:list") }.to output(/#{Regexp.escape(user.email_address)}/).to_stdout
     end
   end
 end

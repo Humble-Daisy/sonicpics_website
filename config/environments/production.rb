@@ -1,8 +1,12 @@
 require "active_support/core_ext/integer/time"
+require_relative "../../lib/deploy_credentials"
 require_relative "../../lib/mail_delivery"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
+
+  # First, so every later read decrypts the credentials this deploy names.
+  config.credentials.merge!(DeployCredentials.paths(ENV))
 
   # Code is not reloaded between requests.
   config.enable_reloading = false

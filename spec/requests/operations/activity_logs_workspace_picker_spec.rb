@@ -15,7 +15,8 @@ require "rails_helper"
 # workspace missing from a capped list is unselectable with no signal. Every
 # example here that caps something also asserts the page SAYS it capped.
 RSpec.describe "Operations activity ledger workspace picker", type: :request do
-  let(:operator) { create(:user).tap { |u| Operatorship.grant!(user: u) } }
+  # Fixed, because the operator's own "<first name>'s Workspace" is searchable too (a random Ralph matched "alph").
+  let(:operator) { create(:user, first_name: "Operator").tap { |u| Operatorship.grant!(user: u) } }
 
   before { sign_in(operator) }
 

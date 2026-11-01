@@ -1,0 +1,126 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Protects next (integration), release/** (candidates) and main (production) on GitHub.
+# Swap or edit it, and config/github/rulesets/, when your flow changes: /docs/developer/forking.
+
+require "json"
+require "open3"
+require "optparse"
+require_relative "../lib/github_origin"
+
+class BranchRules
+  RULESETS = "config/github/rulesets"
+  INTEGRATION = "next"
+
+  def initialize(options, root: Dir.pwd)
+    @opts = options
+    @root = File.expand_path(root)
+    @ok = true
+  end
+
+  def run
+    @repo = @opts[:repo] || detect_repo
+    say("== Branch rules for #{@repo}#{' (solo: no approval required)' if solo?} ==")
+
+    existing = existing_rulesets
+    ensure_integration_branch!
+    set_default_branch!
+    rulesets.each { |ruleset| apply!(ruleset, existing) }
+    report_foreign(existing)
+
+    say(@ok ? "\nDone." : "\nSome rules were not applied; see above.")
+    @ok
+  end
+
+  def rulesets
+    Dir[File.join(@root, RULESETS, "*.json")].sort.map do |file|
+      ruleset = JSON.parse(File.read(file))
+      ruleset["rules"].each do |rule|
+        rule["parameters"]["required_approving_review_count"] = 0 if solo? && rule["type"] == "pull_request"
+      end
+      ruleset
+    end
+  end
+
+  private
+
+  def solo? = @opts[:solo]
+  def dry_run? = @opts[:dry_run]
+  def say(msg) = puts(msg)
+
+  def detect_repo
+    GithubOrigin.repo(@root) || abort("bin/branch-rules: origin isn't a GitHub repository; pass --repo OWNER/NAME")
+  end
+
+  def existing_rulesets
+    out, ok = gh("api", "repos/#{@repo}/rulesets")
+    abort("bin/branch-rules: could not read #{@repo}'s rulesets: #{out}") unless ok
+
+    JSON.parse(out)
+  end
+
+  def ensure_integration_branch!
+    _, exists = gh("api", "repos/#{@repo}/git/ref/heads/#{INTEGRATION}")
+    return say("  ✓ #{INTEGRATION} exists") if exists
+
+    sha, ok = gh("api", "repos/#{@repo}/git/ref/heads/main", "--jq", ".object.sha")
+    abort("bin/branch-rules: #{@repo} has no main to start #{INTEGRATION} from; push main first") unless ok
+
+    write("create #{INTEGRATION} at main (#{sha[0, 7]})",
+          "api", "-X", "POST", "repos/#{@repo}/git/refs", "-f", "ref=refs/heads/#{INTEGRATION}", "-f", "sha=#{sha}")
+  end
+
+  def set_default_branch!
+    write("make #{INTEGRATION} the default branch; delete branches once merged; allow auto-merge",
+          "api", "-X", "PATCH", "repos/#{@repo}", "-f", "default_branch=#{INTEGRATION}",
+          "-F", "delete_branch_on_merge=true", "-F", "allow_merge_commit=true", "-F", "allow_auto_merge=true")
+  end
+
+  def apply!(ruleset, existing)
+    current = existing.find { |r| r["name"] == ruleset["name"] }
+    method, path = current ? [ "PUT", "repos/#{@repo}/rulesets/#{current['id']}" ] : [ "POST", "repos/#{@repo}/rulesets" ]
+    write("#{current ? 'update' : 'create'} the #{ruleset['name']} ruleset",
+          "api", "-X", method, path, "--input", "-", stdin: JSON.dump(ruleset))
+  end
+
+  def report_foreign(existing)
+    ours = rulesets.map { |r| r["name"] }
+    foreign = existing.reject { |r| ours.include?(r["name"]) }
+    return if foreign.empty?
+
+    say("\n  ! Rulesets this script does not manage still apply; reconcile them by hand:")
+    foreign.each { |r| say("      #{r['name']}  (https://github.com/#{@repo}/rules/#{r['id']})") }
+  end
+
+  def write(description, *args, stdin: nil)
+    return say("  [dry-run] would #{description}") if dry_run?
+
+    out, ok = gh(*args, stdin: stdin)
+    if ok
+      say("  → #{description}")
+    else
+      @ok = false
+      say("  ✗ could not #{description}: #{out.lines.last.to_s.strip}")
+    end
+  end
+
+  def gh(*args, stdin: nil)
+    out, err, status = Open3.capture3("gh", *args, stdin_data: stdin.to_s, chdir: @root)
+    [ status.success? ? out.strip : [ out, err ].join("\n").strip, status.success? ]
+  rescue Errno::ENOENT
+    abort("bin/branch-rules: needs the GitHub CLI (gh), signed in as a repo admin")
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+  options = {}
+  OptionParser.new do |o|
+    o.banner = "Usage: bin/branch-rules [options]"
+    o.on("--repo OWNER/NAME", "GitHub repository (default: origin's)") { |v| options[:repo] = v }
+    o.on("--solo", "Require no approval: you merge your own PRs, and GitHub refuses a self-approval") { options[:solo] = true }
+    o.on("--dry-run", "Print the plan without changing anything") { options[:dry_run] = true }
+  end.parse!
+
+  exit(BranchRules.new(options, root: File.expand_path("..", __dir__)).run)
+end

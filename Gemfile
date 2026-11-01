@@ -5,7 +5,7 @@ ruby file: ".tool-versions"
 # Rails main at a full commit, moved by hand; Dependabot ignores it.
 # See /docs/developer/getting-started (Rails comes from a pinned commit).
 gem "rails", github: "rails/rails", ref: "0901f2cc03e7c8dc9bc1d3be67895be7ee0141ea"
-# Security floor: resolv < 0.7.2 carries CVE-2026-80212. Ruby 4.0.7 ships 0.7.2
+# Security floor: resolv < 0.7.2 carries CVE-2026-80212. Ruby 4.0.9 ships 0.7.2
 # as the default gem; the pin keeps a fork's fresh resolve from landing below it.
 gem "resolv", ">= 0.7.2"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
@@ -71,6 +71,8 @@ gem "image_processing", "~> 2.2"
 gem "ruby-vips", require: false
 gem "active_storage_validations"
 gem "activestorage-hotcell-client"
+# The object_storage service in config/storage.yml; without it production can't upload its database backups.
+gem "aws-sdk-s3", "~> 1.0", require: false
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -89,6 +91,9 @@ group :development, :test do
   # runs in the normal suite rather than as a separate CI step that Lefthook
   # would have to mirror.
   gem "i18n-tasks", "~> 1.0", require: false
+
+  # bin/release: the next → release/<name> → main flow [https://github.com/dschmura/release_flow]
+  gem "release_flow", "~> 0.1.1", require: false
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
@@ -141,7 +146,7 @@ gem "lexxy", "~> 1.0"
 # Runtime dependency: the vendored app/components/ui/* are ViewComponents and are
 # loaded in production. This MUST stay a top-level gem — modelrails_ui (below) only
 # GENERATES the components in development and is excluded from production.
-gem "view_component", "~> 4.16"
+gem "view_component", "~> 4.18"
 
 # Runtime dependency of the vendored ApplicationComponent#cn helper: tailwind_merge
 # resolves conflicting Tailwind utilities so a per-instance `class:` passthrough
