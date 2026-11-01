@@ -1,8 +1,12 @@
 # Name of your application. Used to uniquely configure containers.
-service: sonicpics_website
+service: sonicpics
 
 # Name of the container image (use your-user/app-name on external registries).
-image: sonicpics_website
+image: sonicpics
+
+# The deploy host's name is private, so it is stored encrypted in fnox.toml as KAMAL_HOST.
+# KAMAL_HOST in the environment wins; with neither, the name never resolves and SSH fails.
+# <% deploy_host = ENV.fetch("KAMAL_HOST") { `fnox get KAMAL_HOST 2>/dev/null`[/\S+/] || "deploy-host.invalid" } %>
 
 # === SQLite single-host constraint ===
 # This template defaults to SQLite (with Solid Queue/Cache/Cable in-process).
@@ -22,7 +26,7 @@ image: sonicpics_website
 servers:
   web:
     hosts:
-      - 192.168.0.1
+      - <%= deploy_host %>
 
   # === TRAP for SQLite users ===
   # The job: role below runs a separate `bin/jobs` Solid Queue supervisor.
@@ -44,9 +48,15 @@ servers:
 #
 # Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
 #
-# proxy:
-#   ssl: true
-#   host: app.example.com
+# HTTPS ends at the web server in front of kamal-proxy, which listens on 8080.
+# proxy.run is host-wide: keep it identical in every app deployed to this host.
+proxy:
+  ssl: false
+  host: sonicpics.com
+  app_port: 80
+  run:
+    http_port: 8080
+    https_port: 8443
 
 # Where you keep your container images.
 registry:
@@ -70,10 +80,10 @@ env:
   secret:
     - RAILS_MASTER_KEY
   clear:
-    # RAILS_HOST: app.yourdomain.com   # required; production refuses to boot without it
+    RAILS_HOST: sonicpics.com
 
     # Daily backups of the database and uploads, to a folder or a bucket: /docs/developer/deployment
-    # BACKUP_PATH: /backups               # the folder mounted under volumes: below
+    BACKUP_PATH: /backups
 
     # BACKUP_SCHEDULE: every day at 2am   # any Solid Queue schedule
 
@@ -111,7 +121,7 @@ env:
     # WEB_CONCURRENCY: 2
 
     # Match this to any external database server to configure Active Record correctly.
-    # Use sonicpics_website-db for a db accessory server on same machine via local kamal docker network.
+    # Use sonicpics-db for a db accessory server on same machine via local kamal docker network.
 
     # DB_HOST: 192.168.0.2
 
@@ -129,8 +139,8 @@ aliases:
 # Use a persistent storage volume for sqlite database files and local Active Storage files.
 # Recommended to change this to a mounted volume path that is backed up off server.
 volumes:
-  - "sonicpics_website_storage:/rails/storage"
-  # - "/srv/backups:/backups"   # the BACKUP_PATH folder, writable by uid 1000
+  - "sonicpics_storage:/rails/storage"
+  - "/srv/backups:/backups"   # the BACKUP_PATH folder, writable by uid 1000
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old
@@ -139,10 +149,10 @@ asset_path: /rails/public/assets
 
 # Configure the image builder.
 builder:
-  arch: amd64
+  arch: arm64
 
-  # # Build image via remote server (useful for faster amd64 builds on arm64 computers)
-  # remote: ssh://docker@docker-builder-server
+  # Used only where Kamal runs on another architecture, such as GitHub's x86 runners.
+  remote: ssh://deploy@<%= deploy_host %>
 
   # Pass the Ruby version through so the production image always matches the
   # version Bundler enforces via Gemfile.lock. Keep in sync with .tool-versions.
@@ -154,8 +164,8 @@ builder:
   #   - RAILS_MASTER_KEY
 
 # Use a different ssh user than root
-# ssh:
-#   user: app
+ssh:
+  user: deploy
 
 # Hot Cell (sandboxed image processing) is an accessory too, shipped off; its full block, the
 # group-add, volume and env lines, and the order to boot them in: /docs/developer/hot-cell.

@@ -14,4 +14,4 @@ env:
     # RAILS_HOST: staging.yourdomain.com
 
 volumes:
-  - "sonicpics_website_staging_storage:/rails/storage"
+  - "sonicpics_staging_storage:/rails/storage"
