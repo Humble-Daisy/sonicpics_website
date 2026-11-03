@@ -1,11 +1,7 @@
 <% content_for(:title) { t("pages.home.hero.title") } %>
 
-<%# Photo first, as on the original: each slide carries its own caption and
-    App Store badge on an opaque band along the photo's foot (axe wants an
-    opaque plate under any control laid over media). Slide one's caption is the page's h1;
-    inactive slides only slide out of view, so it stays in the outline. The
-    caption's right padding clears the carousel's pause button. Full-bleed and
-    flush under the header, as on the original. %>
+<%# Full-bleed under the header, as on the original; captions sit on an opaque band
+    for axe, and slide one's caption is the page's h1 (PR #7). %>
 <section class="w-full" aria-label="<%= t("pages.home.carousel.label") %>">
   <%= ui(:carousel, label: t("pages.home.carousel.label"), autoplay: 8000) do |carousel| %>
     <% [
