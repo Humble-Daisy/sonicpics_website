@@ -1,0 +1,1 @@
+- The home page's photo carousel spans the full width of the window and sits flush under the header, as on the original site.
